@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+      - "v*.*.*"
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "24.2"
+          elixir-version: "1.13.1"
+          gleam-version: "0.19.0"
+
+      - run: mix archive.install hex mix_gleam --force
+        working-directory: /
+
+      - run: mix deps.get
+
+      - run: mix gleam.test
+        working-directory: test_projects/basic_project
