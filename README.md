@@ -21,7 +21,10 @@ A Gleam library for tensor maths.
 ```elixir
 # mix.exs
 defp deps do
-  [{:argamak, "~> 0.1"}]
+  [
+    {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"},
+    {:argamak, "~> 0.1"},
+  ]
 end
 ```
 
