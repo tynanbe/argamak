@@ -12,7 +12,7 @@ A Gleam library for tensor maths.
 >
 > —Albert Einstein, to Tullio Levi-Civita, circa 1915–1917
 
-<p style="text-align: center"><img alt="Argamak: A shiny steed" src="https://github.com/tynanbe/argamak/raw/main/argamak.jpg" width="250" style="max-width: 100vw"></p>
+<p align="center" width="100%"><img alt="Argamak: A shiny steed." src="https://github.com/tynanbe/argamak/raw/main/argamak.jpg" width="250"></p>
 
 ## Installation
 
