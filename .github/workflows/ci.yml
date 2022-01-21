@@ -15,16 +15,25 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - run: mv mix.exs mix.exs.ignore
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "24.2"
           elixir-version: "1.13.1"
           gleam-version: "0.19.0"
-        working-directory: /
 
       - run: mix archive.install hex mix_gleam --force
-        working-directory: /
+
+      - run: mv mix.exs.ignore mix.exs
+
+      - run: sed -i -E 's/# (\{:nx,)/\1/' mix.exs
 
       - run: mix deps.get
+      - uses: actions/cache@v2
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
 
       - run: mix gleam.test
