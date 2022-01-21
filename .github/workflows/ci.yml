@@ -20,6 +20,7 @@ jobs:
           otp-version: "24.2"
           elixir-version: "1.13.1"
           gleam-version: "0.19.0"
+        working-directory: /
 
       - run: mix archive.install hex mix_gleam --force
         working-directory: /
@@ -27,4 +28,3 @@ jobs:
       - run: mix deps.get
 
       - run: mix gleam.test
-        working-directory: test_projects/basic_project
