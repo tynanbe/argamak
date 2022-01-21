@@ -2,7 +2,7 @@
 
 [![Hex Package](https://img.shields.io/hexpm/v/argamak?color=ffaff3&label=%F0%9F%93%A6)](https://hex.pm/packages/argamak)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3?label=%F0%9F%93%9A)](https://hexdocs.pm/argamak/)
-[![License](https://img.shields.io/hexpm/l/argamak?color=ffaff3&label=%F0%9F%93%83)](https://hex.pm/packages/argamak)
+[![License](https://img.shields.io/hexpm/l/argamak?color=ffaff3&label=%F0%9F%93%83)](https://github.com/tynanbe/argamak/blob/main/LICENSE)
 [![Build](https://img.shields.io/github/workflow/status/tynanbe/argamak/CI?color=ffaff3&label=%E2%9C%A8)](https://github.com/tynanbe/argamak/actions)
 
 A Gleam library for tensor maths.
@@ -13,7 +13,7 @@ A Gleam library for tensor maths.
 >
 > —Albert Einstein, to Tullio Levi-Civita, circa 1915–1917
 
-<p align="center" width="100%"><img alt="Argamak: A shiny steed." src="https://github.com/tynanbe/argamak/raw/main/argamak.jpg" width="250"></p>
+<p align="center" width="100%"><a href="https://www.wikiwand.com/en/Akhal-Teke"><img alt="Argamak: A shiny steed." src="https://github.com/tynanbe/argamak/raw/main/argamak.jpg" width="250"></a></p>
 
 ## Installation
 
