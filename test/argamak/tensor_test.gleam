@@ -486,40 +486,6 @@ pub fn to_list_test() {
   |> should.equal(list)
 }
 
-//pub fn to_lists_test() {
-//  let list = [1., 2., 3.]
-//  let lists = fn(list: a) {
-//    list
-//    |> dynamic.from
-//    |> Lists
-//  }
-//
-//  assert Ok(d1) = space.d1(A)
-//  assert Ok(d2) = space.d2(#(A, -1), #(B, 1))
-//  assert Ok(d6) =
-//    space.d6(#(A, 1), #(B, 1), #(C, 1), #(D, 1), #(E, 1), #(F, -1))
-//
-//  0.
-//  |> tensor.from_float
-//  |> tensor.to_lists
-//  |> should.equal(lists([0.]))
-//
-//  assert Ok(tensor) = tensor.from_floats(of: list, into: d1)
-//  tensor
-//  |> tensor.to_lists
-//  |> should.equal(lists(list))
-//
-//  assert Ok(tensor) = tensor.from_floats(of: list, into: d2)
-//  tensor
-//  |> tensor.to_lists
-//  |> should.equal(lists([[1.], [2.], [3.]]))
-//
-//  assert Ok(tensor) = tensor.from_floats(of: list, into: d6)
-//  tensor
-//  |> tensor.to_lists
-//  |> should.equal(lists([[[[[[1., 2., 3.]]]]]]))
-//}
-
 pub fn to_native_test() {
   let native =
     [1, 2, 3, 4, 5, 6, 7, 8]

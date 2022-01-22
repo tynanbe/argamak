@@ -730,16 +730,13 @@ pub fn print(
   wrap_at max_width: Int,
   meta meta: Bool,
 ) -> Nil {
-  let string = case rank(tensor) == 0 {
-    True -> {
-      assert Ok(space) = space.d0()
-      Tensor(data: to_native(tensor), format: format(tensor), space: space)
-      |> scalar_to_string
-    }
+  let string = data_to_string(from: tensor, wrap_at: max_width)
+  let string = case rank(tensor) > 0 {
+    True -> string
     False ->
-      tensor
-      |> to_lists
-      |> lists_to_string(wrap_at: max_width)
+      string
+      |> string.drop_left(up_to: 1)
+      |> string.drop_right(up_to: 1)
   }
 
   case meta {
@@ -767,139 +764,52 @@ pub fn print(
   |> io.println
 }
 
-if erlang {
-  fn scalar_to_string(tensor: Tensor(a, D0, axis)) -> String {
-    let is_float =
-      [format.float64(), format.float32(), format.bfloat16(), format.float16()]
-      |> list.any(satisfying: fn(float_format) {
-        let tensor_format =
-          tensor
-          |> format
-          |> dynamic.from
-          |> dynamic.unsafe_coerce
-        float_format == tensor_format
-      })
-    case is_float {
-      True ->
-        tensor
-        |> dynamic.from
-        |> dynamic.unsafe_coerce
-        |> to_float
-        |> do_scalar_to_string
-      False ->
-        tensor
-        |> dynamic.from
-        |> dynamic.unsafe_coerce
-        |> to_int
-        |> do_scalar_to_string
-    }
-  }
-}
-
-fn do_scalar_to_string(scalar: a) -> String {
-  assert Ok(string) =
-    scalar
-    |> dynamic.from
-    |> dynamic.any(of: [
-      function.compose(
-        dynamic.float,
-        result.map(over: _, with: float.to_string),
-      ),
-      function.compose(dynamic.int, result.map(over: _, with: int.to_string)),
-      dynamic.string,
-    ])
-
-  string
-}
-
-/// A `Lists` is a list with nested lists of one type of element inside.
+/// Returns a `String` representation of a `Tensor`'s data.
 ///
-type Lists(a, list) {
-  Lists(list)
-}
-
-/// Converts a `Tensor` into lists.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d3(#(X, 2), #(Y, 1), #(Z, 2))
-/// > try tensor = from_floats(of: [1., 2., 3., 4.], into: space)
-/// > Ok(to_lists(tensor))
-/// [[[1, 2]], [[3, 4]]]
-/// ```
-///
-fn to_lists(tensor: Tensor(a, dn, axis)) -> Lists(a, Dynamic) {
-  tensor
-  |> shape
-  |> list.drop(up_to: 1)
-  |> list.reverse
-  |> list.fold(
-    from: dynamic.from(to_list(tensor)),
-    with: fn(acc, size) {
-      assert Ok(acc) =
-        acc
-        |> dynamic.shallow_list
-      acc
-      |> list.sized_chunk(into: size)
-      |> dynamic.from
-    },
-  )
-  |> Lists
-}
-
-/// Converts a list of lists into a `String`.
-///
-/// Takes a `max_width` (in columns) argument for which the special values `-1`
-/// and `0` represent default and no wrapping, respectively.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > import gleam/io
-/// > let string = to_string([[1, 2], [3, 4]], -1)
-/// > io.println(string)
-/// // [[1, 2],
-/// //  [3, 4]]
-/// Nil
-///
-/// > let string = to_string([[[1, 2, 3, 4]], [[5, 6, 7, 8]]], 10)
-/// > io.println(string)
-/// // [[[1, 2,
-/// //    3, 4]],
-/// //  [[5, 6,
-/// //    7, 8]]]
-/// Nil
-/// ```
-///
-fn lists_to_string(
-  from lists: Lists(a, Dynamic),
+fn data_to_string(
+  from tensor: Tensor(a, dn, axis),
   wrap_at max_width: Int,
 ) -> String {
-  let max_width = case max_width {
-    int if int < 0 -> 39
-    _ -> max_width
-  }
-  let is_long = case max_width {
-    int if int == 0 -> fn(_) { False }
-    _ -> fn(int) { int > max_width }
+  let max_width = case max_width < 0 {
+    True -> 39
+    False -> max_width
   }
 
-  let Lists(list) = lists
-  let #(_, string) = lists_to_string_acc(over: list, from: #(1, max_width, is_long))
+  let is_long = case max_width != 0 {
+    True -> fn(int) { int > max_width }
+    False -> fn(_) { False }
+  }
+
+  let #(_, string) =
+    tensor
+    |> shape
+    |> list.drop(up_to: 1)
+    |> list.reverse
+    |> list.fold(
+      from: tensor
+      |> to_list
+      |> dynamic.from,
+      with: fn(acc, size) {
+        assert Ok(acc) = dynamic.shallow_list(acc)
+        acc
+        |> list.sized_chunk(into: size)
+        |> dynamic.from
+      },
+    )
+    |> data_to_string_acc(from: DataToStringAcc(depth: 1, is_long: is_long))
 
   string.concat(["[", string, "]"])
 }
 
-fn lists_to_string_acc(
-  from acc: #(Int, Int, fn(Int) -> Bool),
-  over list: Dynamic,
-) -> #(#(Int, Int, fn(Int) -> Bool), String) {
-  let #(depth, max_width, is_long) = acc
+type DataToStringAcc {
+  DataToStringAcc(depth: Int, is_long: fn(Int) -> Bool)
+}
 
-  let ws = string.repeat(" ", times: depth)
+fn data_to_string_acc(
+  from acc: DataToStringAcc,
+  over list: Dynamic,
+) -> #(DataToStringAcc, String) {
+  let ws = string.repeat(" ", times: acc.depth)
   let ws_length = string.length(ws)
 
   assert Ok(string) =
@@ -913,11 +823,11 @@ fn lists_to_string_acc(
             let #(_, strings) =
               list.map_fold(
                 over: list,
-                from: #(depth + 1, max_width, is_long),
+                from: DataToStringAcc(..acc, depth: acc.depth + 1),
                 with: fn(acc, list) {
                   list
                   |> dynamic.from
-                  |> lists_to_string_acc(from: acc)
+                  |> data_to_string_acc(from: acc)
                 },
               )
             strings
@@ -942,9 +852,9 @@ fn lists_to_string_acc(
               |> iterator.index
               |> iterator.fold(
                 from: #(0, ""),
-                with: fn(acc, tuple) {
+                with: fn(inner_acc, tuple) {
                   let #(index, item) = tuple
-                  let #(line_length, string) = acc
+                  let #(line_length, string) = inner_acc
                   let item = item_to_string(item)
                   let item_length = string.length(item) + 1
                   case index == 0 {
@@ -952,7 +862,7 @@ fn lists_to_string_acc(
                     False -> {
                       let item_length = item_length
                       let line_length = line_length + item_length
-                      case is_long(line_length + ws_length) {
+                      case acc.is_long(line_length + ws_length) {
                         True -> #(
                           ws_length + item_length,
                           string.concat([string, ",\n", ws, item]),
@@ -972,7 +882,7 @@ fn lists_to_string_acc(
       ),
     ])
 
-  #(#(depth, max_width, is_long), string)
+  #(acc, string)
 }
 
 fn item_to_string(item: Dynamic) -> String {
@@ -1003,10 +913,7 @@ fn rescue(
 }
 
 if erlang {
-  fn do_rescue(
-    fun1: fn() -> a,
-    fun2: fn(String) -> error,
-  ) -> Result(a, error) {
+  fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
     fun1
     |> erlang.rescue
     |> result.map_error(with: function.compose(decode_crash, fun2))
