@@ -79,20 +79,20 @@ pub fn d0() -> Result(Space(D0, axis), SpaceErrors) {
   |> Ok
 }
 
-/// Results in a 1-dimensional `Space`.
+/// Results in a 1-dimensional `Space` on success, or `SpaceErrors` on failure.
 ///
 /// ## Examples
 ///
 /// ```gleam
 /// > type Axis { A }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > elements(space)
 /// [#(A, -1)]
 /// ```
 ///
-pub fn d1(axis: axis) -> Result(Space(D1, axis), SpaceErrors) {
-  Space(degree: D1, elements: [#(axis, -1)])
-  |> Ok
+pub fn d1(a: #(axis, Int)) -> Result(Space(D1, axis), SpaceErrors) {
+  Space(degree: D1, elements: [a])
+  |> validate
 }
 
 /// Results in a 2-dimensional `Space` on success, or `SpaceErrors` on failure.
@@ -211,7 +211,7 @@ pub fn d6(
 /// []
 ///
 /// > type Axis { A B C }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > axes(space)
 /// [A]
 ///
@@ -236,7 +236,7 @@ pub fn axes(of space: Space(dn, axis)) -> List(axis) {
 /// D0
 ///
 /// > type Axis { A B C }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > degree(space)
 /// D1
 ///
@@ -259,7 +259,7 @@ pub fn degree(of space: Space(dn, axis)) -> dn {
 /// []
 ///
 /// > type Axis { A B C }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > elements(space)
 /// [#(A, -1)]
 ///
@@ -282,7 +282,7 @@ pub fn elements(of space: Space(dn, axis)) -> List(#(axis, Int)) {
 /// []
 ///
 /// > type Axis { A B C }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > shape(space)
 /// [-1]
 ///
@@ -311,7 +311,7 @@ pub fn shape(of space: Space(dn, axis)) -> List(Int) {
 /// > elements(space)
 /// []
 ///
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > assert Ok(space) = map_elements(of: space, with: fn(_) { #(C, 3) })
 /// > elements(space)
 /// [#(C, 3)]
@@ -351,7 +351,7 @@ pub fn map_elements(
 /// "D0"
 ///
 /// > type Axis { A B C }
-/// > assert Ok(space) = d1(A)
+/// > assert Ok(space) = d1(#(A, -1))
 /// > to_string(space)
 /// "D1 #(A, -1)"
 ///

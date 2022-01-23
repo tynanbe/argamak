@@ -4,6 +4,7 @@ import argamak/tensor
 import gleam/dynamic.{Dynamic}
 import gleam/int
 import gleam/list
+import gleam/pair
 import gleam/result
 import gleeunit/should
 
@@ -42,7 +43,7 @@ pub fn from_floats_test() {
     |> list.map(with: int.to_float)
 
   assert Ok(d0) = space.d0()
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, 2), #(B, 32))
   assert Ok(d3) = space.d3(#(A, 2), #(B, 2), #(C, 16))
   assert Ok(d4) = space.d4(#(A, 2), #(B, 2), #(C, 2), #(D, 8))
@@ -88,7 +89,7 @@ pub fn from_ints_test() {
   let list = list.range(from: 1, to: 65)
 
   assert Ok(d0) = space.d0()
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, 2), #(B, 32))
   assert Ok(d3) = space.d3(#(A, 2), #(B, 2), #(C, 16))
   assert Ok(d4) = space.d4(#(A, 2), #(B, 2), #(C, 2), #(D, 8))
@@ -143,7 +144,7 @@ pub fn from_native_test() {
 pub fn axes_test() {
   let list = [0.]
 
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, 1), #(B, 1))
   assert Ok(d3) = space.d3(#(A, 1), #(B, 1), #(C, 1))
   assert Ok(d4) = space.d4(#(A, 1), #(B, 1), #(C, 1), #(D, 1))
@@ -187,7 +188,7 @@ pub fn axes_test() {
 }
 
 pub fn format_test() {
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
 
   0.
   |> tensor.from_float
@@ -213,7 +214,7 @@ pub fn format_test() {
 pub fn rank_test() {
   let list = [0.]
 
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, 1), #(B, 1))
   assert Ok(d3) = space.d3(#(A, 1), #(B, 1), #(C, 1))
   assert Ok(d4) = space.d4(#(A, 1), #(B, 1), #(C, 1), #(D, 1))
@@ -261,7 +262,7 @@ pub fn shape_test() {
     list.range(from: 1, to: 721)
     |> list.map(with: int.to_float)
 
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, 1), #(B, 2))
   assert Ok(d3) = space.d3(#(A, 1), #(B, 2), #(C, 3))
   assert Ok(d4) = space.d4(#(A, 1), #(B, 2), #(C, 3), #(D, 4))
@@ -315,7 +316,7 @@ pub fn space_test() {
   |> tensor.space
   |> should.equal(space)
 
-  assert Ok(space) = space.d1(A)
+  assert Ok(space) = space.d1(#(A, -1))
   assert Ok(tensor) = tensor.from_ints(of: list, into: space)
   tensor
   |> tensor.space
@@ -343,8 +344,96 @@ pub fn as_format_test() {
   |> should.equal(format.int32())
 }
 
+pub fn broadcast_test() {
+  assert Ok(d1) = space.d1(#(A, 3))
+  assert Ok(d2) = space.d2(#(A, 2), #(B, 3))
+
+  assert Ok(tensor) =
+    0
+    |> tensor.from_int
+    |> tensor.broadcast(into: d1)
+  tensor
+  |> tensor.space
+  |> space.elements
+  |> should.equal(space.elements(d1))
+  tensor
+  |> tensor.to_list
+  |> should.equal([0, 0, 0])
+
+  assert Ok(tensor) = tensor.broadcast(from: tensor, into: d2)
+  tensor
+  |> tensor.space
+  |> space.elements
+  |> should.equal(space.elements(d2))
+  tensor
+  |> tensor.to_list
+  |> should.equal([0, 0, 0, 0, 0, 0])
+}
+
+pub fn broadcast_over_test() {
+  assert Ok(d1) = space.d1(#(A, -1))
+  assert Ok(d2) = space.d2(#(A, 3), #(B, 2))
+  assert Ok(d3) = space.d3(#(A, 3), #(B, 2), #(C, 2))
+
+  let list = [1, 2, 3]
+  assert Ok(tensor) = tensor.from_ints(of: list, into: d1)
+  assert Ok(tensor) =
+    tensor.broadcast_over(from: tensor, into: d2, with: fn(_) { A })
+  tensor
+  |> tensor.space
+  |> space.elements
+  |> should.equal(space.elements(d2))
+  tensor
+  |> tensor.to_list
+  |> should.equal(list.flat_map(
+    over: list,
+    with: list.repeat(item: _, times: 2),
+  ))
+
+  let list = [1, 2, 3, 4, 5, 6]
+
+  assert Ok(tensor) = tensor.from_ints(of: list, into: d2)
+  assert Ok(new_tensor) =
+    tensor.broadcast_over(from: tensor, into: d3, with: pair.first)
+  new_tensor
+  |> tensor.space
+  |> space.elements
+  |> should.equal(space.elements(d3))
+  new_tensor
+  |> tensor.to_list
+  |> should.equal(list.flat_map(
+    over: list,
+    with: list.repeat(item: _, times: 2),
+  ))
+
+  assert Ok(new_tensor) =
+    tensor.broadcast_over(
+      from: tensor,
+      into: d3,
+      with: fn(element) {
+        let #(axis, _) = element
+        case axis {
+          A -> A
+          B -> C
+        }
+      },
+    )
+  new_tensor
+  |> tensor.space
+  |> space.elements
+  |> should.equal(space.elements(d3))
+  new_tensor
+  |> tensor.to_list
+  |> should.equal(
+    list
+    |> list.sized_chunk(into: 2)
+    |> list.flat_map(with: list.repeat(item: _, times: 2))
+    |> list.flatten,
+  )
+}
+
 pub fn fit_test() {
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, -1), #(B, 1))
 
   0.
@@ -365,7 +454,7 @@ pub fn fit_test() {
 
 pub fn reshape_test() {
   assert Ok(d0) = space.d0()
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d2) = space.d2(#(A, -1), #(B, 1))
   assert Ok(d3) = space.d3(#(A, 1), #(B, -1), #(C, 1))
   assert Ok(d4) = space.d4(#(A, 1), #(B, 1), #(C, -1), #(D, 1))
@@ -466,7 +555,7 @@ pub fn to_int_test() {
 pub fn to_list_test() {
   let list = [1., 2., 3.]
 
-  assert Ok(d1) = space.d1(A)
+  assert Ok(d1) = space.d1(#(A, -1))
   assert Ok(d6) =
     space.d6(#(A, 1), #(B, 1), #(C, 1), #(D, 1), #(E, 1), #(F, -1))
 

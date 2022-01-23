@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.0
+
+- The `space` module gets an updated `d1` function so the dimension size can be
+  given.
+- The `tensor` module gains the `broadcast`, and `broadcast_over` functions for
+  all compilation targets (JavaScript planned).
+
 ## v0.1.0 - 2022-01-20
 
 - Initial release!

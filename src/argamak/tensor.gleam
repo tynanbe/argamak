@@ -8,6 +8,8 @@ import gleam/io
 import gleam/iterator
 import gleam/list
 import gleam/option.{None, Option, Some}
+import gleam/pair
+import gleam/regex
 import gleam/result
 import gleam/string
 
@@ -45,8 +47,12 @@ if erlang {
   fn do_error(message: String) -> TensorError {
     [
       #(EmptyTensor, "empty tensor"),
+      #(IncompatibleAxes, "axes .*? must be unique integers"),
+      #(IncompatibleAxes, "broadcast axes must be ordered"),
       #(IncompatibleAxes, "cannot merge names"),
+      #(IncompatibleShape, "cannot broadcast"),
       #(IncompatibleShape, "cannot reshape"),
+      #(IncompatibleShape, "invalid dimension"),
       #(InvalidData, "cannot infer the numerical type"),
     ]
     |> replace_error(when: message, found_in: _)
@@ -99,7 +105,7 @@ pub fn from_int(int: Int) -> Tensor(Int, D0, Nil) {
 /// ```gleam
 /// > import argamak/space
 /// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_floats(of: [1.], into: space)
 /// > Ok(print(from: tensor, wrap_at: -1, meta: True))
 /// // Tensor
@@ -154,7 +160,7 @@ pub fn from_floats(
 /// ```gleam
 /// > import argamak/space
 /// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_ints(of: [1], into: space)
 /// > Ok(print(from: tensor, wrap_at: -1, meta: True))
 /// // Tensor
@@ -254,6 +260,7 @@ if erlang {
   }
 
   type Opt(axis) {
+    Axes(List(Int))
     Names(List(axis))
   }
 
@@ -271,7 +278,7 @@ if erlang {
 ///
 /// > import argamak/space
 /// > type Axis { X }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_floats(of: [1., 2., 3.], into: space)
 /// > Ok(axes(tensor))
 /// Ok([X])
@@ -302,7 +309,7 @@ pub fn axes(tensor: Tensor(a, dn, axis)) -> List(axis) {
 ///
 /// > import argamak/space
 /// > type Axis { X }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_ints(of: [1, 2, 3], into: space)
 /// > Ok(format(tensor))
 /// Ok(format.int32())
@@ -323,7 +330,7 @@ pub fn format(tensor: Tensor(a, dn, axis)) -> Format(a) {
 ///
 /// > import argamak/space
 /// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_ints(of: [1, 2, 3], into: space)
 /// > Ok(rank(tensor))
 /// Ok(1)
@@ -351,7 +358,7 @@ pub fn rank(tensor: Tensor(a, dn, axis)) -> Int {
 ///
 /// > import argamak/space
 /// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_ints(of: [1, 2, 3], into: space)
 /// > Ok(shape(tensor))
 /// Ok([3])
@@ -379,7 +386,7 @@ pub fn shape(tensor: Tensor(a, dn, axis)) -> List(Int) {
 /// space
 ///
 /// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_ints(of: [1, 2, 3], into: space)
 /// > Ok(space(tensor))
 /// Ok(space)
@@ -412,7 +419,7 @@ pub fn space(tensor: Tensor(a, dn, axis)) -> Space(dn, axis) {
 ///
 /// > import argamak/space
 /// > type Axis { X }
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_floats(of: [1., 2., 3.], into: space)
 /// > Ok(as_format(for: tensor, apply: format.int32))
 /// from_ints(of: [1, 2, 3], into: space)
@@ -436,6 +443,238 @@ if erlang {
     "Elixir.Nx" "as_type"
 }
 
+/// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
+/// success, or a `TensorError` on failure.
+///
+/// The new `Space` cannot be of lower dimensionality than the `Tensor`'s
+/// current `Space`.
+///
+/// The new `Tensor`'s current `Space` must have dimension sizes compatible with
+/// the right-most dimensions of the new `Space`; that is, every current
+/// dimension size must be `1` or equal to its counterpart in the new `Space`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/space
+/// > type Axis { X Y Z }
+/// > let tensor = from_int(0)
+/// > assert Ok(space) = space.d1(#(X, 3))
+/// > try tensor = broadcast(from: tensor, into: space)
+/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Int32
+/// // space: D1 #(X, 3)
+/// // data:
+/// // [0, 0, 0]
+/// Ok(Nil)
+///
+/// > assert Ok(space) = space.d1(#(X, -1))
+/// > let tensor = from_ints(of: [-1], into: space)
+/// > assert Ok(space) = space.d1(#(Y, 5))
+/// > try tensor = broadcast(from: tensor, into: space)
+/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Int32
+/// // space: D1 #(Y, 5)
+/// // data:
+/// // [-1, -1, -1, -1, -1]
+/// Ok(Nil)
+///
+/// > assert Ok(space) = space.d1(#(X, -1))
+/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
+/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 3))
+/// > try tensor = broadcast(from: tensor, into: space)
+/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Float32
+/// // space: D2 #(X, 2), #(Y, 3)
+/// // data:
+/// // [[1.0, 2.0, 3.0],
+/// //  [1.0, 2.0, 3.0]]
+/// Ok(Nil)
+/// ```
+///
+pub fn broadcast(
+  from tensor: Tensor(a, b, c),
+  into space: Space(dn, axis),
+) -> Result(Tensor(a, dn, axis), TensorError) {
+  fn() { do_broadcast(tensor, space) }
+  |> rescue(apply: error)
+}
+
+if erlang {
+  fn do_broadcast(
+    tensor: Tensor(a, b, c),
+    space: Space(dn, axis),
+  ) -> Tensor(a, dn, axis) {
+    let shape =
+      space
+      |> space.shape
+      |> list_to_tuple
+    let opt =
+      space
+      |> space.axes
+      |> Names
+
+    Tensor(
+      data: tensor
+      |> to_native
+      |> erlang_broadcast(shape, [opt]),
+      format: format(tensor),
+      space: space,
+    )
+  }
+
+  external fn erlang_broadcast(Native, tuple, List(Opt(axis))) -> Native =
+    "Elixir.Nx" "broadcast"
+}
+
+/// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
+/// success, or a `TensorError` on failure.
+///
+/// The new `Space` cannot be of lower dimensionality than the `Tensor`'s
+/// current `Space`.
+///
+/// The given function will be used to map from the elements of the `Tensor`'s
+/// current `Space` to axes of the new `Space`, allowing broadcasting into a
+/// `Space` that would be incompatible for a standard `broadcast` operation.
+/// The function must uniquely map the current `Space`'s axes to the new
+/// `Space`'s axes; that is, duplicate axes will result in a `TensorError`.
+/// Furthermore, the current `Space`'s axes must maintain the same relative
+/// order when mapped to the new `Space`.
+///
+/// The new `Tensor`'s current `Space` must have dimension sizes compatible with
+/// the matching dimensions of the new `Space`; that is, every current dimension
+/// size must be `1` or equal to its counterpart in the new `Space`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/space
+/// > type Axis { X Y Z }
+/// > assert Ok(space) = space.d1(#(X, -1))
+/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
+/// > assert Ok(space) = space.d2(#(X, 3), #(Y, 2))
+/// > try new_tensor = broadcast_over(
+///     from: tensor,
+///     into: space,
+///     with: fn(_) { X },
+///   )
+/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Float32
+/// // space: D2 #(X, 3), #(Y, 2)
+/// // data:
+/// // [[1.0, 1.0],
+/// //  [2.0, 2.0],
+/// //  [3.0, 3.0]]
+/// Ok(Nil)
+///
+/// > try tensor = from_ints(of: [1, 2, 3, 4, 5, 6], into: space)
+/// > assert Ok(space) = space.d3(#(X, 3), #(Y, 2), #(Z, 2))
+/// > try new_tensor = broadcast_over(
+///     from: tensor,
+///     into: space,
+///     with: fn(element) {
+///       let #(axis, _size) = element
+///       case axis {
+///         X -> X
+///         Y -> Z
+///       }
+///     },
+///   )
+/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Int32
+/// // space: D3 #(X, 3), #(Y, 2), #(Z, 2)
+/// // data:
+/// // [[[1, 2],
+/// //   [1, 2]],
+/// //  [[3, 4],
+/// //   [3, 4]],
+/// //  [[5, 6],
+/// //   [5, 6]]]
+/// Ok(Nil)
+///
+/// > import gleam/pair
+/// > try new_tensor = broadcast_over(
+///     from: tensor,
+///     into: space,
+///     with: pair.first,
+///   )
+/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
+/// // Tensor
+/// // format: Int32
+/// // space: D3 #(X, 3), #(Y, 2), #(Z, 2)
+/// // data:
+/// // [[[1, 1],
+/// //   [2, 2]],
+/// //  [[3, 3],
+/// //   [4, 4]],
+/// //  [[5, 5],
+/// //   [6, 6]]]
+/// Ok(Nil)
+/// ```
+///
+pub fn broadcast_over(
+  from tensor: Tensor(a, b, c),
+  into space: Space(dn, axis),
+  with axes: fn(#(c, Int)) -> axis,
+) -> Result(Tensor(a, dn, axis), TensorError) {
+  let indexed_axes =
+    space
+    |> space.axes
+    |> iterator.from_list
+    |> iterator.index
+  try axes =
+    tensor.space
+    |> space.elements
+    |> list.map(with: function.compose(
+      axes,
+      fn(axis) {
+        indexed_axes
+        |> iterator.find(one_that: function.compose(
+          pair.second,
+          fn(new_axis) { new_axis == axis },
+        ))
+        |> result.map(with: pair.first)
+        |> result.replace_error(IncompatibleAxes)
+      },
+    ))
+    |> result.all
+
+  fn() { do_broadcast_over(tensor, space, axes) }
+  |> rescue(apply: error)
+}
+
+if erlang {
+  fn do_broadcast_over(
+    tensor: Tensor(a, b, c),
+    space: Space(dn, axis),
+    axes: List(Int),
+  ) -> Tensor(a, dn, axis) {
+    let shape =
+      space
+      |> space.shape
+      |> list_to_tuple
+    let opts = [
+      Axes(axes),
+      space
+      |> space.axes
+      |> Names,
+    ]
+
+    Tensor(
+      data: tensor
+      |> to_native
+      |> erlang_broadcast(shape, opts),
+      format: format(tensor),
+      space: space,
+    )
+  }
+}
+
 /// Results in a `Tensor` placed into a given n-dimensional `Space` on success,
 /// or a `TensorError` on failure.
 ///
@@ -449,7 +688,7 @@ if erlang {
 /// > import argamak/space
 /// > type Axis { X Y Z }
 /// > let tensor = from_float(1.)
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = reshape(put: tensor, into: space)
 /// > Ok(print(from: tensor, wrap_at: -1, meta: True))
 /// // Tensor
@@ -459,7 +698,7 @@ if erlang {
 /// // [1.0]
 /// Ok(Nil)
 ///
-/// > assert Ok(space) = space.d1(X)
+/// > assert Ok(space) = space.d1(#(X, -1))
 /// > try tensor = from_floats(of: [1., 2., 3., 4.], into: space)
 /// > assert Ok(space) = space.d2(#(X, 2), #(Y, 2))
 /// > try tensor = reshape(put: tensor, into: space)
@@ -973,11 +1212,13 @@ fn replace_error(
 
 if erlang {
   fn do_replace_error(message: String, list: List(#(error, String))) -> error {
+    let options = regex.Options(case_insensitive: True, multi_line: False)
     assert Ok(error) =
       list
       |> list.find_map(with: fn(pair) {
-        let #(error, reason) = pair
-        case string.contains(does: message, contain: reason) {
+        let #(error, test) = pair
+        assert Ok(test) = regex.compile(test, with: options)
+        case regex.check(with: test, content: message) {
           True -> Ok(error)
           False -> Error(Nil)
         }
