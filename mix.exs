@@ -31,7 +31,7 @@ defmodule Argamak.MixProject do
     [
       {:gleam_stdlib, "~> 0.19"},
       {:gleam_erlang, "~> 0.8"},
-      # {:nx, "~> 0.1.0-dev", github: "elixir-nx/nx", branch: "main", sparse: "nx"},
+      {:nx, "~> 0.1"},
       {:gleeunit, "~> 0.6", only: [:dev, :test], runtime: false},
     ]
   end
