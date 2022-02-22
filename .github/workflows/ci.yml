@@ -30,10 +30,11 @@ jobs:
       - run: sed -i -E 's/# (\{:nx,)/\1/' mix.exs
 
       - run: mix deps.get
-      - uses: actions/cache@v2
-        with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+# TODO: Restore cache once mix_gleam handles deps.update
+#      - uses: actions/cache@v2
+#        with:
+#          path: deps
+#          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+#          restore-keys: ${{ runner.os }}-mix-
 
       - run: mix gleam.test

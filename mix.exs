@@ -30,7 +30,7 @@ defmodule Argamak.MixProject do
   defp deps do
     [
       {:gleam_stdlib, "~> 0.19"},
-      {:gleam_erlang, "~> 0.8"},
+      {:gleam_erlang, "~> 0.9"},
       {:nx, "~> 0.1"},
       {:gleeunit, "~> 0.6", only: [:dev, :test], runtime: false},
     ]
