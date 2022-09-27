@@ -1,13 +1,30 @@
 name = "argamak"
-version = "0.1.0"
-licences = ["Apache-2.0"]
+version = "0.2.0-dev"
 description = "A tensor library for the Gleam programming language"
-repository = { type = "github", user = "tynanbe", repo = "argamak" }
-links = [{ title = "Website", href = "https://gleam.run/" }]
+licences = ["Apache-2.0"]
+
+[repository]
+repo = "argamak"
+user = "tynanbe"
+type = "github"
+
+[[links]]
+href = "https://gleam.run/"
+title = "Website"
 
 [dependencies]
-gleam_stdlib = "~> 0.19"
-gleam_erlang = "~> 0.8"
+gleam_erlang = "~> 0.15"
+gleam_stdlib = "~> 0.23"
+nx = "~> 0.3"
 
 [dev-dependencies]
-gleeunit = "~> 0.6"
+gleeunit = "~> 0.7"
+rad = "~> 0.1"
+
+#[rad]
+#targets = ["erlang", "javascript"]
+
+[[rad.formatters]]
+name = "javascript"
+check = ["rome", "ci", "--indent-style=space", "src", "test"]
+run = ["rome", "format", "--indent-style=space", "--write", "src", "test"]

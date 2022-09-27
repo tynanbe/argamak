@@ -5,7 +5,6 @@ import gleam/dynamic.{Dynamic}
 import gleam/int
 import gleam/list
 import gleam/pair
-import gleam/result
 import gleeunit/should
 
 pub type Axis {
@@ -39,7 +38,7 @@ pub fn from_int_test() {
 
 pub fn from_floats_test() {
   let list =
-    list.range(from: 1, to: 65)
+    list.range(from: 1, to: 64)
     |> list.map(with: int.to_float)
 
   assert Ok(d0) = space.d0()
@@ -86,7 +85,7 @@ pub fn from_floats_test() {
 }
 
 pub fn from_ints_test() {
-  let list = list.range(from: 1, to: 65)
+  let list = list.range(from: 1, to: 64)
 
   assert Ok(d0) = space.d0()
   assert Ok(d1) = space.d1(#(A, -1))
@@ -259,7 +258,7 @@ pub fn rank_test() {
 
 pub fn shape_test() {
   let list =
-    list.range(from: 1, to: 721)
+    list.range(from: 1, to: 720)
     |> list.map(with: int.to_float)
 
   assert Ok(d1) = space.d1(#(A, -1))
@@ -415,6 +414,7 @@ pub fn broadcast_over_test() {
         case axis {
           A -> A
           B -> C
+          else -> else
         }
       },
     )

@@ -1,10 +1,14 @@
-import gleam/dynamic
-import gleam/list
 import gleam/result
-import gleam/string
 
 if erlang {
+  import gleam/dynamic
   import gleam/erlang/atom
+  import gleam/list
+  import gleam/string
+}
+
+if javascript {
+  import gleam/dynamic.{Dynamic}
 }
 
 /// An error type for utility functions.

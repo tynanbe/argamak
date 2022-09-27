@@ -3,38 +3,47 @@ name: CI
 on:
   push:
     branches:
-      - "main"
+      - main
       - "v*.*.*"
   pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      MIX_ENV: test
     steps:
-      - uses: actions/checkout@v2
-
-      - run: mv mix.exs mix.exs.ignore
+      - uses: actions/checkout@v3
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "24.2"
-          elixir-version: "1.13.1"
-          gleam-version: "0.19.0"
+          otp-version: "25.1"
+          elixir-version: "1.14.0"
+          gleam-version: "0.23.0"
 
-      - run: mix archive.install hex mix_gleam --force
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-      - run: mv mix.exs.ignore mix.exs
+      - uses: charlieegan3/fetch-gh-release-binary@main
+        with:
+          owner: rome
+          repo: tools
+          version: cli/v0.8.0-next
+          asset-pattern: linux-x64
+          install-path: /usr/local/bin/rome
+          verbose: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: sed -i -E 's/# (\{:nx,)/\1/' mix.exs
+      - run: echo "$PWD/build/packages/rad/priv" >> $GITHUB_PATH
 
-      - run: mix deps.get
-# TODO: Restore cache once mix_gleam handles deps.update
-#      - uses: actions/cache@v2
-#        with:
-#          path: deps
-#          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-#          restore-keys: ${{ runner.os }}-mix-
+      - run: gleam deps download
 
-      - run: mix gleam.test
+      - uses: actions/cache@v3
+        with:
+          path: build/packages
+          key: ${{ runner.os }}-gleam-${{ hashFiles('**/manifest.toml') }}
+          restore-keys: ${{ runner.os }}-gleam-
+
+      - run: rad format --check
+
+      - run: rad test

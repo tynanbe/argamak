@@ -1,5 +1,4 @@
 import argamak/util
-import gleam/dynamic
 
 /// Numerical formats for tensors.
 ///
@@ -129,6 +128,18 @@ if erlang {
       Int8 -> S(8)
       Uint8 -> U(8)
     }
+  }
+}
+
+if javascript {
+  /// TODO
+  ///
+  pub opaque type Native {
+    Native(size: Int)
+  }
+
+  fn do_to_native(format: Format(a)) -> Native {
+    todo
   }
 }
 

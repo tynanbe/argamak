@@ -1,11 +1,12 @@
 # Changelog
 
-## v0.2.0
+## Unreleased
 
 - The `space` module gets an updated `d1` function so the dimension size can be
   given.
 - The `tensor` module gains the `broadcast`, and `broadcast_over` functions for
   all compilation targets (JavaScript planned).
+- Argamak now uses the `gleam` build tool.
 
 ## v0.1.0 - 2022-01-20
 

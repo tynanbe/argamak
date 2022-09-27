@@ -59,6 +59,12 @@ if erlang {
   }
 }
 
+if javascript {
+  fn do_error(message: String) -> TensorError {
+    todo
+  }
+}
+
 /// Converts a `Float` into a `Tensor`.
 ///
 /// ## Examples
@@ -268,6 +274,16 @@ if erlang {
     "Elixir.Nx" "tensor"
 }
 
+if javascript {
+  fn do_tensor(
+    data: a,
+    space: Space(dn, axis),
+    format: fn() -> Format(b),
+  ) -> Result(Tensor(b, dn, axis), TensorError) {
+    todo
+  }
+}
+
 /// Returns the axes of a given `Tensor`.
 ///
 /// ## Examples
@@ -443,6 +459,12 @@ if erlang {
     "Elixir.Nx" "as_type"
 }
 
+if javascript {
+  fn do_as_format(a: Native, b: format.Native) -> Native {
+    todo
+  }
+}
+
 /// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
 /// success, or a `TensorError` on failure.
 ///
@@ -528,6 +550,15 @@ if erlang {
 
   external fn erlang_broadcast(Native, tuple, List(Opt(axis))) -> Native =
     "Elixir.Nx" "broadcast"
+}
+
+if javascript {
+  fn do_broadcast(
+    tensor: Tensor(a, b, c),
+    space: Space(dn, axis),
+  ) -> Tensor(a, dn, axis) {
+    todo
+  }
 }
 
 /// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
@@ -675,6 +706,16 @@ if erlang {
   }
 }
 
+if javascript {
+  fn do_broadcast_over(
+    tensor: Tensor(a, b, c),
+    space: Space(dn, axis),
+    axes: List(Int),
+  ) -> Tensor(a, dn, axis) {
+    todo
+  }
+}
+
 /// Results in a `Tensor` placed into a given n-dimensional `Space` on success,
 /// or a `TensorError` on failure.
 ///
@@ -766,6 +807,12 @@ if erlang {
     "Elixir.Nx" "reshape"
 }
 
+if javascript {
+  fn do_reshape(tensor: Tensor(a, dn, axis)) -> Tensor(a, dn, axis) {
+    todo
+  }
+}
+
 /// Converts a `Tensor` without dimensions into a `Float`.
 ///
 /// ## Examples
@@ -815,6 +862,12 @@ if erlang {
     "Elixir.Nx" "to_number"
 }
 
+if javascript {
+  fn to_number(tensor: Native) -> a {
+    todo
+  }
+}
+
 /// Converts a `Tensor` into a flat list of numbers.
 ///
 /// ## Examples
@@ -840,6 +893,12 @@ pub fn to_list(tensor: Tensor(a, dn, axis)) -> List(a) {
 if erlang {
   external fn do_to_list(Native) -> List(a) =
     "Elixir.Nx" "to_flat_list"
+}
+
+if javascript {
+  fn do_to_list(tensor: Native) -> List(a) {
+    todo
+  }
 }
 
 /// Coverts a `Tensor` into its `Native` representation.
@@ -1056,68 +1115,60 @@ fn data_to_string_acc(
     |> dynamic.any(of: [
       function.compose(
         dynamic.list(of: dynamic.shallow_list),
-        result.map(
-          over: _,
-          with: fn(list) {
-            let #(_, strings) =
-              list.map_fold(
-                over: list,
-                from: DataToStringAcc(..acc, depth: acc.depth + 1),
-                with: fn(acc, list) {
-                  list
-                  |> dynamic.from
-                  |> data_to_string_acc(from: acc)
-                },
-              )
-            strings
-            |> iterator.from_list
-            |> iterator.map(with: fn(string) {
-              string.concat(["[", string, "]"])
-            })
-            |> iterator.intersperse(with: string.append(to: ",\n", suffix: ws))
-            |> iterator.to_list
-            |> string.concat
-          },
-        ),
+        result.map(_, with: fn(list) {
+          let #(_, strings) =
+            list.map_fold(
+              over: list,
+              from: DataToStringAcc(..acc, depth: acc.depth + 1),
+              with: fn(acc, list) {
+                list
+                |> dynamic.from
+                |> data_to_string_acc(from: acc)
+              },
+            )
+          strings
+          |> iterator.from_list
+          |> iterator.map(with: fn(string) { string.concat(["[", string, "]"]) })
+          |> iterator.intersperse(with: string.append(to: ",\n", suffix: ws))
+          |> iterator.to_list
+          |> string.concat
+        }),
       ),
       function.compose(
         dynamic.shallow_list,
-        result.map(
-          over: _,
-          with: fn(list) {
-            let #(_, string) =
-              list
-              |> iterator.from_list
-              |> iterator.index
-              |> iterator.fold(
-                from: #(0, ""),
-                with: fn(inner_acc, tuple) {
-                  let #(index, item) = tuple
-                  let #(line_length, string) = inner_acc
-                  let item = item_to_string(item)
-                  let item_length = string.length(item) + 1
-                  case index == 0 {
-                    True -> #(ws_length + item_length, item)
-                    False -> {
-                      let item_length = item_length
-                      let line_length = line_length + item_length
-                      case acc.is_long(line_length + ws_length) {
-                        True -> #(
-                          ws_length + item_length,
-                          string.concat([string, ",\n", ws, item]),
-                        )
-                        False -> #(
-                          line_length + 1,
-                          string.concat([string, ", ", item]),
-                        )
-                      }
+        result.map(_, with: fn(list) {
+          let #(_, string) =
+            list
+            |> iterator.from_list
+            |> iterator.index
+            |> iterator.fold(
+              from: #(0, ""),
+              with: fn(inner_acc, tuple) {
+                let #(index, item) = tuple
+                let #(line_length, string) = inner_acc
+                let item = item_to_string(item)
+                let item_length = string.length(item) + 1
+                case index == 0 {
+                  True -> #(ws_length + item_length, item)
+                  False -> {
+                    let item_length = item_length
+                    let line_length = line_length + item_length
+                    case acc.is_long(line_length + ws_length) {
+                      True -> #(
+                        ws_length + item_length,
+                        string.concat([string, ",\n", ws, item]),
+                      )
+                      False -> #(
+                        line_length + 1,
+                        string.concat([string, ", ", item]),
+                      )
                     }
                   }
-                },
-              )
-            string
-          },
-        ),
+                }
+              },
+            )
+          string
+        }),
       ),
     ])
 
@@ -1199,6 +1250,12 @@ if erlang {
     "Elixir.Exception" "exception?"
 }
 
+if javascript {
+  fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
+    todo
+  }
+}
+
 /// Replaces an error message string based on a keyword list of errors.
 ///
 /// Crashes if the message isn't found in the list.
@@ -1225,5 +1282,11 @@ if erlang {
       })
 
     error
+  }
+}
+
+if javascript {
+  fn do_replace_error(message: String, list: List(#(error, String))) -> error {
+    todo
   }
 }
