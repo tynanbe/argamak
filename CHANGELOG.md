@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.2.0 - 2022-09-29
 
 - The `space` module gets an updated `d1` function so the dimension size can be
   given.

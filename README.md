@@ -17,19 +17,41 @@ A Gleam library for tensor maths.
 
 ## Installation
 
-### Mix
+### As a dependency of your Gleam project
+
+• Add `argamak` to `gleam.toml` from the command line
+
+```shell
+$ gleam add argamak
+```
+
+### As a dependency of your Mix project
+
+• Add `argamak` to `mix.exs`
 
 ```elixir
-# mix.exs
 defp deps do
   [
-    {:argamak, "~> 0.1"},
+    {:argamak, "~> 0.2"},
   ]
 end
 ```
 
-*For the Erlang compilation target, `argamak` depends on `Elixir.Nx` and, for
-the time being, is easiest to use as a dependency of a `Mix` project.*
+### As a dependency of your Rebar3 project
+
+• Add `argamak` to `rebar.config`
+
+```erlang
+{deps, [
+  {argamak, "0.2.0"}
+]}.
+```
+
+### JavaScript
+
+The `@tensorflow/tfjs` package is a runtime requirement for `argamak`, and its
+import path in the `argamak_ffi.mjs` module might need adjustment, depending on
+your use case.
 
 ## Usage
 
