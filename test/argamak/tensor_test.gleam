@@ -16,12 +16,6 @@ pub type Axis {
   F
 }
 
-external fn erlang_tensor(Dynamic) -> tensor.Native =
-  "Elixir.Nx" "tensor"
-
-external fn erlang_shape(tensor.Native) -> Dynamic =
-  "Elixir.Nx" "shape"
-
 pub fn from_float_test() {
   0.
   |> tensor.from_float
@@ -128,16 +122,6 @@ pub fn from_ints_test() {
   tensor
   |> tensor.to_list
   |> should.equal(list)
-}
-
-pub fn from_native_test() {
-  assert Ok(space) = space.d2(#(A, 2), #(B, -1))
-
-  [[1, 2], [3, 4]]
-  |> dynamic.from
-  |> erlang_tensor
-  |> tensor.from_native(into: space, with: format.int32)
-  |> should.be_ok
 }
 
 pub fn axes_test() {
@@ -575,16 +559,42 @@ pub fn to_list_test() {
   |> should.equal(list)
 }
 
+pub fn from_native_test() {
+  assert Ok(space) = space.d2(#(A, 2), #(B, -1))
+
+  [[1, 2], [3, 4]]
+  |> dynamic.from
+  |> native_tensor
+  |> tensor.from_native(into: space, with: format.int32)
+  |> should.be_ok
+}
+
 pub fn to_native_test() {
   let native =
     [1, 2, 3, 4, 5, 6, 7, 8]
     |> dynamic.from
-    |> erlang_tensor
+    |> native_tensor
   assert Ok(space) = space.d3(#(A, 2), #(B, -1), #(C, 2))
   assert Ok(tensor) =
     tensor.from_native(of: native, into: space, with: format.int32)
   tensor
   |> tensor.to_native
-  |> erlang_shape
+  |> native_shape
   |> should.equal(dynamic.from(#(2, 2, 2)))
+}
+
+if erlang {
+  external fn native_tensor(Dynamic) -> tensor.Native =
+    "Elixir.Nx" "tensor"
+
+  external fn native_shape(tensor.Native) -> Dynamic =
+    "Elixir.Nx" "shape"
+}
+
+if javascript {
+  external fn native_tensor(Dynamic) -> tensor.Native =
+    "../argamak_ffi.mjs" "tensor"
+
+  external fn native_shape(tensor.Native) -> Dynamic =
+    "../argamak_test_ffi.mjs" "shape"
 }

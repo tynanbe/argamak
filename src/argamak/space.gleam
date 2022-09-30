@@ -470,7 +470,7 @@ fn validate(space: Space(dn, axis)) -> Result(Space(dn, axis), SpaceErrors) {
           |> list.flatten
         let result = case errors {
           [] -> Ok(element)
-          _ -> Error(errors)
+          _else -> Error(errors)
         }
         ValidateAcc(
           axes: [axis, ..acc.axes],

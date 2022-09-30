@@ -5,7 +5,8 @@
 - The `space` module gets an updated `d1` function so the dimension size can be
   given.
 - The `tensor` module gains the `broadcast`, and `broadcast_over` functions for
-  all compilation targets (JavaScript planned).
+  all compilation targets.
+- Argamak now compiles and runs with the JavaScript target.
 - Argamak now uses the `gleam` build tool.
 
 ## v0.1.0 - 2022-01-20

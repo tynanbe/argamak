@@ -21,10 +21,15 @@ nx = "~> 0.3"
 gleeunit = "~> 0.7"
 rad = "~> 0.1"
 
-#[rad]
-#targets = ["erlang", "javascript"]
+[rad]
+targets = ["erlang", "javascript"]
 
 [[rad.formatters]]
 name = "javascript"
 check = ["rome", "ci", "--indent-style=space", "src", "test"]
 run = ["rome", "format", "--indent-style=space", "--write", "src", "test"]
+
+[[rad.tasks]]
+path = ["init"]
+run = ["npm", "install"]
+shortdoc = "Initialize argamak"

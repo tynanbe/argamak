@@ -132,15 +132,12 @@ if erlang {
 }
 
 if javascript {
-  /// TODO
+  /// A type for `Native` format representations.
   ///
-  pub opaque type Native {
-    Native(size: Int)
-  }
+  pub external type Native
 
-  fn do_to_native(format: Format(a)) -> Native {
-    todo
-  }
+  external fn do_to_native(Format(a)) -> Native =
+    "../argamak_ffi.mjs" "format_to_native"
 }
 
 /// Converts a `Format` into a `String`.

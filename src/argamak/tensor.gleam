@@ -1,20 +1,24 @@
 import argamak/format.{Format}
 import argamak/space.{D0, Space}
-import gleam/dynamic.{DecodeError, DecodeErrors, Dynamic}
 import gleam/float
 import gleam/function
 import gleam/int
 import gleam/io
 import gleam/iterator
 import gleam/list
+import gleam/map
 import gleam/option.{None, Option, Some}
-import gleam/pair
 import gleam/regex
 import gleam/result
 import gleam/string
 
 if erlang {
+  import gleam/dynamic.{DecodeError, DecodeErrors, Dynamic}
   import gleam/erlang.{Crash}
+}
+
+if javascript {
+  import gleam/dynamic.{Dynamic}
 }
 
 /// A `Tensor` is a generic container for n-dimensional data structures.
@@ -26,6 +30,11 @@ pub opaque type Tensor(a, dn, axis) {
 /// A type for `Native` tensor representations.
 ///
 pub external type Native
+
+type Opt(axis) {
+  //Axes(List(Int))
+  Names(List(axis))
+}
 
 /// When a tensor operation cannot succeed.
 ///
@@ -61,7 +70,14 @@ if erlang {
 
 if javascript {
   fn do_error(message: String) -> TensorError {
-    todo
+    [
+      // TODO
+      #(IncompatibleShape, "provided shape"),
+      #(IncompatibleShape, "requested shape"),
+      #(InvalidData, "values passed to tensor"),
+      #(InvalidData, "referenceerror"),
+    ]
+    |> replace_error(when: message, found_in: _)
   }
 }
 
@@ -238,7 +254,9 @@ pub fn from_native(
   into space: Space(dn, axis),
   with format: fn() -> Format(a),
 ) -> Result(Tensor(a, dn, axis), TensorError) {
-  tensor(from: do_to_list(native), into: space, with: format)
+  native
+  |> do_to_list
+  |> tensor(into: space, with: format)
 }
 
 /// Results in a `Tensor` put into a given `Space` with a `Format` applied to
@@ -249,39 +267,25 @@ fn tensor(
   into space: Space(dn, axis),
   with format: fn() -> Format(b),
 ) -> Result(Tensor(b, dn, axis), TensorError) {
-  fn() { do_tensor(data, space, format) }
+  fn() {
+    data
+    |> do_tensor([])
+    |> Tensor(format: format(), space: space)
+    |> reshape(into: space)
+    |> result.map(with: as_format(for: _, apply: format))
+  }
   |> rescue(apply: error)
   |> result.flatten
 }
 
 if erlang {
-  fn do_tensor(
-    data: a,
-    space: Space(dn, axis),
-    format: fn() -> Format(b),
-  ) -> Result(Tensor(b, dn, axis), TensorError) {
-    Tensor(data: erlang_tensor(data, []), format: format(), space: space)
-    |> reshape(into: space)
-    |> result.map(with: as_format(for: _, apply: format))
-  }
-
-  type Opt(axis) {
-    Axes(List(Int))
-    Names(List(axis))
-  }
-
-  external fn erlang_tensor(a, List(Opt(axis))) -> Native =
+  external fn do_tensor(a, List(Opt(axis))) -> Native =
     "Elixir.Nx" "tensor"
 }
 
 if javascript {
-  fn do_tensor(
-    data: a,
-    space: Space(dn, axis),
-    format: fn() -> Format(b),
-  ) -> Result(Tensor(b, dn, axis), TensorError) {
-    todo
-  }
+  external fn do_tensor(a, discard) -> Native =
+    "../argamak_ffi.mjs" "tensor"
 }
 
 /// Returns the axes of a given `Tensor`.
@@ -445,13 +449,11 @@ pub fn as_format(
   for tensor: Tensor(a, dn, axis),
   apply format: fn() -> Format(b),
 ) -> Tensor(b, dn, axis) {
-  Tensor(
-    data: format()
-    |> format.to_native
-    |> do_as_format(to_native(tensor), _),
-    format: format(),
-    space: space(tensor),
-  )
+  let format = format()
+  tensor
+  |> to_native
+  |> do_as_format(format.to_native(format))
+  |> Tensor(format: format, space: space(tensor))
 }
 
 if erlang {
@@ -460,9 +462,8 @@ if erlang {
 }
 
 if javascript {
-  fn do_as_format(a: Native, b: format.Native) -> Native {
-    todo
-  }
+  external fn do_as_format(Native, format.Native) -> Native =
+    "../argamak_ffi.mjs" "as_type"
 }
 
 /// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
@@ -519,46 +520,34 @@ if javascript {
 ///
 pub fn broadcast(
   from tensor: Tensor(a, b, c),
-  into space: Space(dn, axis),
+  into new_space: Space(dn, axis),
 ) -> Result(Tensor(a, dn, axis), TensorError) {
-  fn() { do_broadcast(tensor, space) }
+  fn() {
+    let shape =
+      new_space
+      |> space.shape
+      |> list_to_tuple
+    let opts = [
+      new_space
+      |> space.axes
+      |> Names,
+    ]
+    tensor
+    |> to_native
+    |> do_broadcast(shape, opts)
+    |> Tensor(format: format(tensor), space: new_space)
+  }
   |> rescue(apply: error)
 }
 
 if erlang {
-  fn do_broadcast(
-    tensor: Tensor(a, b, c),
-    space: Space(dn, axis),
-  ) -> Tensor(a, dn, axis) {
-    let shape =
-      space
-      |> space.shape
-      |> list_to_tuple
-    let opt =
-      space
-      |> space.axes
-      |> Names
-
-    Tensor(
-      data: tensor
-      |> to_native
-      |> erlang_broadcast(shape, [opt]),
-      format: format(tensor),
-      space: space,
-    )
-  }
-
-  external fn erlang_broadcast(Native, tuple, List(Opt(axis))) -> Native =
+  external fn do_broadcast(Native, tuple, List(Opt(axis))) -> Native =
     "Elixir.Nx" "broadcast"
 }
 
 if javascript {
-  fn do_broadcast(
-    tensor: Tensor(a, b, c),
-    space: Space(dn, axis),
-  ) -> Tensor(a, dn, axis) {
-    todo
-  }
+  external fn do_broadcast(Native, tuple, discard) -> Native =
+    "../argamak_ffi.mjs" "broadcast"
 }
 
 /// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
@@ -650,70 +639,56 @@ if javascript {
 ///
 pub fn broadcast_over(
   from tensor: Tensor(a, b, c),
-  into space: Space(dn, axis),
+  into new_space: Space(dn, axis),
   with axes: fn(#(c, Int)) -> axis,
 ) -> Result(Tensor(a, dn, axis), TensorError) {
-  let indexed_axes =
-    space
-    |> space.axes
-    |> iterator.from_list
-    |> iterator.index
-  try axes =
-    tensor.space
+  let new_elements =
+    new_space
     |> space.elements
-    |> list.map(with: function.compose(
-      axes,
-      fn(axis) {
-        indexed_axes
-        |> iterator.find(one_that: function.compose(
-          pair.second,
-          fn(new_axis) { new_axis == axis },
-        ))
-        |> result.map(with: pair.first)
+
+  try mapped_elements =
+    tensor
+    |> space
+    |> space.elements
+    |> list.map(
+      with: axes
+      |> function.compose(fn(axis) {
+        new_elements
+        |> list.find(one_that: fn(element) { element.0 == axis })
         |> result.replace_error(IncompatibleAxes)
-      },
-    ))
+      }),
+    )
     |> result.all
+  let axis_map =
+    mapped_elements
+    |> map.from_list
 
-  fn() { do_broadcast_over(tensor, space, axes) }
-  |> rescue(apply: error)
-}
+  let pre_shape =
+    new_elements
+    |> list.map(with: fn(element) {
+      axis_map
+      |> map.get(element.0)
+      |> result.unwrap(or: 1)
+    })
+    |> list_to_tuple
 
-if erlang {
-  fn do_broadcast_over(
-    tensor: Tensor(a, b, c),
-    space: Space(dn, axis),
-    axes: List(Int),
-  ) -> Tensor(a, dn, axis) {
+  fn() {
     let shape =
-      space
+      new_space
       |> space.shape
       |> list_to_tuple
     let opts = [
-      Axes(axes),
-      space
+      new_space
       |> space.axes
       |> Names,
     ]
-
-    Tensor(
-      data: tensor
-      |> to_native
-      |> erlang_broadcast(shape, opts),
-      format: format(tensor),
-      space: space,
-    )
+    tensor
+    |> to_native
+    |> do_reshape(pre_shape, opts)
+    |> do_broadcast(shape, opts)
+    |> Tensor(format: format(tensor), space: new_space)
   }
-}
-
-if javascript {
-  fn do_broadcast_over(
-    tensor: Tensor(a, b, c),
-    space: Space(dn, axis),
-    axes: List(Int),
-  ) -> Tensor(a, dn, axis) {
-    todo
-  }
+  |> rescue(apply: error)
 }
 
 /// Results in a `Tensor` placed into a given n-dimensional `Space` on success,
@@ -779,38 +754,41 @@ if javascript {
 ///
 pub fn reshape(
   put tensor: Tensor(a, b, c),
-  into space: Space(dn, axis),
+  into new_space: Space(dn, axis),
 ) -> Result(Tensor(a, dn, axis), TensorError) {
   try tensor =
-    Tensor(data: to_native(tensor), format: format(tensor), space: space)
+    tensor
+    |> to_native
+    |> Tensor(format: format(tensor), space: new_space)
     |> fit
 
-  fn() { do_reshape(tensor) }
-  |> rescue(apply: error)
-}
-
-if erlang {
-  fn do_reshape(tensor: Tensor(a, dn, axis)) -> Tensor(a, dn, axis) {
-    let space = space(tensor)
+  fn() {
+    let space =
+      tensor
+      |> space
     let shape =
       space
       |> space.shape
       |> list_to_tuple
-    let opt =
+    let opts = [
       space
       |> space.axes
-      |> Names
-    map_data(over: tensor, with: erlang_reshape(_, shape, [opt]))
+      |> Names,
+    ]
+    tensor
+    |> map_data(with: do_reshape(_, shape, opts))
   }
+  |> rescue(apply: error)
+}
 
-  external fn erlang_reshape(Native, tuple, List(Opt(axis))) -> Native =
+if erlang {
+  external fn do_reshape(Native, tuple, List(Opt(axis))) -> Native =
     "Elixir.Nx" "reshape"
 }
 
 if javascript {
-  fn do_reshape(tensor: Tensor(a, dn, axis)) -> Tensor(a, dn, axis) {
-    todo
-  }
+  external fn do_reshape(Native, tuple, discard) -> Native =
+    "../argamak_ffi.mjs" "reshape"
 }
 
 /// Converts a `Tensor` without dimensions into a `Float`.
@@ -863,9 +841,8 @@ if erlang {
 }
 
 if javascript {
-  fn to_number(tensor: Native) -> a {
-    todo
-  }
+  external fn to_number(Native) -> a =
+    "../argamak_ffi.mjs" "to_number"
 }
 
 /// Converts a `Tensor` into a flat list of numbers.
@@ -896,9 +873,8 @@ if erlang {
 }
 
 if javascript {
-  fn do_to_list(tensor: Native) -> List(a) {
-    todo
-  }
+  external fn do_to_list(Native) -> List(a) =
+    "../argamak_ffi.mjs" "to_flat_list"
 }
 
 /// Coverts a `Tensor` into its `Native` representation.
@@ -926,7 +902,9 @@ pub fn to_native(tensor: Tensor(a, dn, axis)) -> Native {
 /// `Space`.
 ///
 fn fit(tensor: Tensor(a, dn, axis)) -> Result(Tensor(a, dn, axis), TensorError) {
-  let space = space(tensor)
+  let space =
+    tensor
+    |> space
   let dividend =
     tensor
     |> to_list
@@ -940,9 +918,9 @@ fn fit(tensor: Tensor(a, dn, axis)) -> Result(Tensor(a, dn, axis), TensorError) 
       from: initial,
       with: fn(acc, element) {
         let #(axis, size) = element
-        case size == -1 {
-          False -> FitAcc(..acc, divisor: acc.divisor * size)
-          True -> FitAcc(..acc, inferring: Some(axis))
+        case size {
+          -1 -> FitAcc(..acc, inferring: Some(axis))
+          _else -> FitAcc(..acc, divisor: acc.divisor * size)
         }
       },
     )
@@ -957,14 +935,15 @@ fn fit(tensor: Tensor(a, dn, axis)) -> Result(Tensor(a, dn, axis), TensorError) 
             |> space.map_elements(with: fn(element) {
               let #(axis, _) = element
               case axis == infer {
-                False -> element
                 True -> #(axis, dividend / divisor)
+                False -> element
               }
             })
-          Ok(Tensor(..tensor, space: space))
+          Tensor(..tensor, space: space)
+          |> Ok
         }
       }
-    _ -> Error(IncompatibleShape)
+    _else -> Error(IncompatibleShape)
   }
 }
 
@@ -987,6 +966,11 @@ fn map_data(
 if erlang {
   external fn list_to_tuple(List(a)) -> Dynamic =
     "erlang" "list_to_tuple"
+}
+
+if javascript {
+  external fn list_to_tuple(List(a)) -> Dynamic =
+    "../argamak_ffi.mjs" "list_to_tuple"
 }
 
 /// Prints a `Tensor`'s underlying data to standard out.
@@ -1028,7 +1012,9 @@ pub fn print(
   wrap_at max_width: Int,
   meta meta: Bool,
 ) -> Nil {
-  let string = data_to_string(from: tensor, wrap_at: max_width)
+  let string =
+    tensor
+    |> data_to_string(wrap_at: max_width)
   let string = case rank(tensor) > 0 {
     True -> string
     False ->
@@ -1038,7 +1024,6 @@ pub fn print(
   }
 
   case meta {
-    False -> ""
     True -> {
       let format =
         tensor
@@ -1050,13 +1035,16 @@ pub fn print(
         |> space.to_string
       [
         "Tensor",
-        string.append(to: "format: ", suffix: format),
-        string.append(to: "space: ", suffix: space),
+        ["format:", format]
+        |> string.join(with: " "),
+        ["space:", space]
+        |> string.join(with: " "),
         "data:",
         "",
       ]
       |> string.join(with: "\n")
     }
+    False -> ""
   }
   |> string.append(suffix: string)
   |> io.println
@@ -1073,9 +1061,9 @@ fn data_to_string(
     False -> max_width
   }
 
-  let is_long = case max_width != 0 {
-    True -> fn(int) { int > max_width }
-    False -> fn(_) { False }
+  let is_long = case max_width {
+    0 -> fn(_) { False }
+    _else -> fn(int) { int > max_width }
   }
 
   let #(_, string) =
@@ -1088,7 +1076,9 @@ fn data_to_string(
       |> to_list
       |> dynamic.from,
       with: fn(acc, size) {
-        assert Ok(acc) = dynamic.shallow_list(acc)
+        assert Ok(acc) =
+          acc
+          |> dynamic.shallow_list
         acc
         |> list.sized_chunk(into: size)
         |> dynamic.from
@@ -1107,8 +1097,12 @@ fn data_to_string_acc(
   from acc: DataToStringAcc,
   over list: Dynamic,
 ) -> #(DataToStringAcc, String) {
-  let ws = string.repeat(" ", times: acc.depth)
-  let ws_length = string.length(ws)
+  let ws =
+    " "
+    |> string.repeat(times: acc.depth)
+  let ws_length =
+    ws
+    |> string.length
 
   assert Ok(string) =
     list
@@ -1117,8 +1111,8 @@ fn data_to_string_acc(
         dynamic.list(of: dynamic.shallow_list),
         result.map(_, with: fn(list) {
           let #(_, strings) =
-            list.map_fold(
-              over: list,
+            list
+            |> list.map_fold(
               from: DataToStringAcc(..acc, depth: acc.depth + 1),
               with: fn(acc, list) {
                 list
@@ -1148,19 +1142,21 @@ fn data_to_string_acc(
                 let #(line_length, string) = inner_acc
                 let item = item_to_string(item)
                 let item_length = string.length(item) + 1
-                case index == 0 {
-                  True -> #(ws_length + item_length, item)
-                  False -> {
+                case index {
+                  0 -> #(ws_length + item_length, item)
+                  _else -> {
                     let item_length = item_length
                     let line_length = line_length + item_length
                     case acc.is_long(line_length + ws_length) {
                       True -> #(
                         ws_length + item_length,
-                        string.concat([string, ",\n", ws, item]),
+                        [string, ",\n", ws, item]
+                        |> string.concat,
                       )
                       False -> #(
                         line_length + 1,
-                        string.concat([string, ", ", item]),
+                        [string, ", ", item]
+                        |> string.concat,
                       )
                     }
                   }
@@ -1206,7 +1202,10 @@ if erlang {
   fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
     fun1
     |> erlang.rescue
-    |> result.map_error(with: function.compose(decode_crash, fun2))
+    |> result.map_error(
+      with: decode_crash
+      |> function.compose(fun2),
+    )
   }
 
   fn decode_crash(crash: Crash) -> String {
@@ -1223,7 +1222,7 @@ if erlang {
         }
         |> result.unwrap(or: "")
 
-      _ -> ""
+      _else -> ""
     }
   }
 
@@ -1231,15 +1230,19 @@ if erlang {
 
   fn exception_from_dynamic(from: Dynamic) -> Result(Exception, DecodeErrors) {
     case is_exception(from) {
-      True -> Ok(dynamic.unsafe_coerce(from))
+      True ->
+        from
+        |> dynamic.unsafe_coerce
+        |> Ok
       False ->
-        Error([
+        [
           DecodeError(
             expected: "Exception",
             found: dynamic.classify(from),
             path: [],
           ),
-        ])
+        ]
+        |> Error
     }
   }
 
@@ -1252,8 +1255,16 @@ if erlang {
 
 if javascript {
   fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
-    todo
+    fun1
+    |> javascript_rescue
+    |> result.map_error(with: fn(error) {
+      error.1
+      |> fun2
+    })
   }
+
+  external fn javascript_rescue(fn() -> a) -> Result(a, #(String, String)) =
+    "../argamak_ffi.mjs" "rescue"
 }
 
 /// Replaces an error message string based on a keyword list of errors.
@@ -1264,29 +1275,19 @@ fn replace_error(
   when message: String,
   found_in list: List(#(error, String)),
 ) -> error {
-  do_replace_error(message, list)
-}
-
-if erlang {
-  fn do_replace_error(message: String, list: List(#(error, String))) -> error {
-    let options = regex.Options(case_insensitive: True, multi_line: False)
-    assert Ok(error) =
-      list
-      |> list.find_map(with: fn(pair) {
-        let #(error, test) = pair
-        assert Ok(test) = regex.compile(test, with: options)
-        case regex.check(with: test, content: message) {
-          True -> Ok(error)
-          False -> Error(Nil)
-        }
-      })
-
-    error
-  }
-}
-
-if javascript {
-  fn do_replace_error(message: String, list: List(#(error, String))) -> error {
-    todo
-  }
+  // io.debug(message) // TODO
+  let opts = regex.Options(case_insensitive: True, multi_line: False)
+  assert Ok(error) =
+    list
+    |> list.find_map(with: fn(pair) {
+      let #(error, test) = pair
+      assert Ok(test) =
+        test
+        |> regex.compile(with: opts)
+      case regex.check(with: test, content: message) {
+        True -> Ok(error)
+        False -> Error(Nil)
+      }
+    })
+  error
 }
