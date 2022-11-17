@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased
+
+- The `tensor` module gains the `TensorResult` type; the `from_bool` and
+  `from_bools` creation functions; the `size` reflection function; the `squeeze`
+  transformation function; the `equal`, `not_equal`, `greater`,
+  `greater_or_equal`, `less`, `less_or_equal`, `logical_and`, `logical_or`,
+  `logical_xor`, and `logical_not` logical functions; the `add`, `subtract`,
+  `multiply`, `divide`, `try_divide`, `remainder`, `try_remainder`, `modulo`,
+  `try_modulo`, `power`, `max`, and `min` arithmetic functions; the
+  `absolute_value`, `negate`, `sign`, `ceiling`, `floor`, `round`, `exp`,
+  `square_root`, and `ln` basic math functions; the `all`, `in_situ_all`, `any`,
+  `in_situ_any`, `arg_max`, `in_situ_arg_max`, `arg_min`, `in_situ_arg_min`,
+  `max_over`, `in_situ_max_over`, `min_over`, `in_situ_min_over`, `sum`,
+  `in_situ_sum`, `product`, `in_situ_product`, `mean`, and `in_situ_mean`
+  reduction functions; the `to_bool`, `to_floats`, `to_ints`, and `to_bools`
+  conversion functions; and the `debug` and `print_data` utility functions.
+- The `tensor` module's `as_format` function has been renamed to `reformat` and
+  now takes a `Format` record instead of a function reference.
+- The `tensor` module no longer includes the `to_list` function.
+- The `Tensor` type signature now includes only the numeric format as a generic.
+- The `axis` module has been added with the `Axis` and `Axes` types; the `name`
+  and `size` reflection functions; and the `rename` and `resize` transformation
+  functions.
+- The `space` module gains the `from_list` creation function; and the `map` and
+  `merge` transformation functions.
+- The `space` module no longer includes the `elements` and `map_elements`
+  functions.
+- The `space` module's `d0` function has been renamed to `new` and noi returns
+  an empty `Space` record directly.
+- The `space` module and its `Space` and `SpaceError` types have been reworked:
+  The `Space` type signature no longer includes any generics, and the
+  constructors `D0` through `D6` have been removed.
+- The `Format` type has been reworked and now includes the numeric format as a
+- Several numeric format types have been added to the `format` module.
+  generic.
+- The `util` module has been removed.
+
 ## v0.2.0 - 2022-09-29
 
 - The `space` module gets an updated `d1` function so the dimension size can be

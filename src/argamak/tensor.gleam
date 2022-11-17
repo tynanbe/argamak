@@ -1,228 +1,277 @@
-import argamak/format.{Format}
-import argamak/space.{D0, Space}
-import gleam/float
-import gleam/function
-import gleam/int
+import argamak/axis.{Axes, Axis, Infer}
+import argamak/format.{Float32, Format, Int32}
+import argamak/space.{Space}
+import gleam/bool
+//import gleam/function
 import gleam/io
+import gleam/int
 import gleam/iterator
 import gleam/list
 import gleam/map
-import gleam/option.{None, Option, Some}
-import gleam/regex
 import gleam/result
 import gleam/string
-
-if erlang {
-  import gleam/dynamic.{DecodeError, DecodeErrors, Dynamic}
-  import gleam/erlang.{Crash}
-}
-
-if javascript {
-  import gleam/dynamic.{Dynamic}
-}
+import gleam/string_builder.{StringBuilder}
 
 /// A `Tensor` is a generic container for n-dimensional data structures.
 ///
-pub opaque type Tensor(a, dn, axis) {
-  Tensor(data: Native, format: Format(a), space: Space(dn, axis))
+pub opaque type Tensor(a) {
+  Tensor(data: Native, format: Format(a), space: Space)
 }
 
 /// A type for `Native` tensor representations.
 ///
 pub external type Native
 
-type Opt(axis) {
-  //Axes(List(Int))
-  Names(List(axis))
-}
-
 /// When a tensor operation cannot succeed.
 ///
 pub type TensorError {
-  EmptyTensor
+  CannotBroadcast
   IncompatibleAxes
   IncompatibleShape
   InvalidData
   SpaceErrors(space.SpaceErrors)
+  ZeroDivision
 }
 
-/// Converts an error message string into a `TensorError`.
+/// A `Result` alias type for tensors.
 ///
-fn error(message: String) -> TensorError {
-  do_error(message)
-}
+pub type TensorResult(a) =
+  Result(Tensor(a), TensorError)
 
-if erlang {
-  fn do_error(message: String) -> TensorError {
-    [
-      #(EmptyTensor, "empty tensor"),
-      #(IncompatibleAxes, "axes .*? must be unique integers"),
-      #(IncompatibleAxes, "broadcast axes must be ordered"),
-      #(IncompatibleAxes, "cannot merge names"),
-      #(IncompatibleShape, "cannot broadcast"),
-      #(IncompatibleShape, "cannot reshape"),
-      #(IncompatibleShape, "invalid dimension"),
-      #(InvalidData, "cannot infer the numerical type"),
-    ]
-    |> replace_error(when: message, found_in: _)
-  }
-}
+/// A `Result` alias type for `Native` tensor data.
+///
+pub type NativeResult =
+  Result(Native, TensorError)
 
-if javascript {
-  fn do_error(message: String) -> TensorError {
-    [
-      // TODO
-      #(IncompatibleShape, "provided shape"),
-      #(IncompatibleShape, "requested shape"),
-      #(InvalidData, "values passed to tensor"),
-      #(InvalidData, "referenceerror"),
-    ]
-    |> replace_error(when: message, found_in: _)
-  }
-}
+/// References a space's `Axes` by index.
+///
+type Indices =
+  List(Int)
 
-/// Converts a `Float` into a `Tensor`.
+/// The sizes of a space's `Axes`.
+///
+type Shape =
+  List(Int)
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Creation Functions                     //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Creates a `Tensor` from a `Float`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > let tensor = from_float(1.)
-/// > print(from: tensor, wrap_at: -1, meta: False)
-/// // 1.0
+/// > from_float(1.) |> print_data
+/// 1.
 /// Nil
 /// ```
 ///
-pub fn from_float(float: Float) -> Tensor(Float, D0, Nil) {
-  assert Ok(space) = space.d0()
-  assert Ok(tensor) = tensor(from: float, into: space, with: format.float32)
-  tensor
+pub fn from_float(x: Float) -> Tensor(Float32) {
+  assert Ok(x) = tensor(from: x, into: space.new(), with: format.float32())
+  x
 }
 
-/// Converts an `Int` into a `Tensor`.
+/// Creates a `Tensor` from an `Int`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > let tensor = from_int(1)
-/// > print(from: tensor, wrap_at: -1, meta: False)
-/// // 1
+/// > from_int(1) |> print_data
+/// 1
 /// Nil
 /// ```
 ///
-pub fn from_int(int: Int) -> Tensor(Int, D0, Nil) {
-  assert Ok(space) = space.d0()
-  assert Ok(tensor) = tensor(from: int, into: space, with: format.int32)
-  tensor
+pub fn from_int(x: Int) -> Tensor(Int32) {
+  assert Ok(x) = tensor(from: x, into: space.new(), with: format.int32())
+  x
+}
+
+/// Creates a `Tensor(Int32)` from a `Bool`.
+///
+/// `True` is represented by `1`, `False` by `0`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > from_bool(True) |> print_data
+/// 1
+/// Nil
+///
+/// > from_bool(False) |> print_data
+/// 0
+/// Nil
+/// ```
+///
+pub fn from_bool(x: Bool) -> Tensor(Int32) {
+  assert Ok(x) =
+    x
+    |> bool.to_int
+    |> tensor(into: space.new(), with: format.int32())
+  x
 }
 
 /// Results in a `Tensor` created from a list of floats and placed into a given
-/// n-dimensional `Space` on success, or a `TensorError` on failure.
+/// `Space` on success, or a `TensorError` on failure.
 ///
-/// The `Space`'s `Shape` may have a single dimension given as `-1`, in which
-/// case that dimension's size will be inferred from the given list. This is
-/// useful when working with lists of unknown length.
+/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// determined based on the given list. This is useful when working with lists
+/// of unknown length.
 ///
 /// ## Examples
 ///
 /// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1.], into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D1 #(X, 1)
-/// // data:
-/// // [1.0]
-/// Ok(Nil)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1.], into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [1.],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 2))
-/// > try tensor = from_floats(of: [1., 2., 3., 4.], into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D2 #(X, 2), #(Y, 2)
-/// // data:
-/// // [[1.0, 2.0],
-/// //  [3.0, 4.0]]
-/// Ok(Nil)
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3., 4.], into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2)),
+///   [[1., 2.],
+///    [3., 4.]],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d3(#(X, -1), #(Y, 2), #(Z, 2))
-/// > let list = [1., 2., 3., 4., 5., 6., 7., 8.]
-/// > try tensor = from_floats(of: list, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D3 #(X, 2), #(Y, 2), #(Z, 2)
-/// // data:
-/// // [[[1.0, 2.0],
-/// //   [3.0, 4.0]],
-/// //  [[5.0, 6.0],
-/// //   [7.0, 8.0]]]
-/// Ok(Nil)
+/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let xs = [1., 2., 3., 4., 5., 6., 7., 8.]
+/// > assert Ok(x) = from_floats(of: xs, into: d3)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2), Z(2)),
+///   [[[1., 2.],
+///     [3., 4.]],
+///    [[5., 6.],
+///     [7., 8.]]],
+/// )
+/// Nil
 /// ```
 ///
 pub fn from_floats(
-  of list: List(Float),
-  into space: Space(dn, axis),
-) -> Result(Tensor(Float, dn, axis), TensorError) {
-  tensor(from: list, into: space, with: format.float32)
+  of xs: List(Float),
+  into space: Space,
+) -> TensorResult(Float32) {
+  tensor(from: xs, into: space, with: format.float32())
 }
 
 /// Results in a `Tensor` created from a list of integers and placed into a
-/// given n-dimensional `Space` on success, or a `TensorError` on failure.
+/// given `Space` on success, or a `TensorError` on failure.
 ///
-/// The `Space`'s `Shape` may have a single dimension given as `-1`, in which
-/// case that dimension's size will be inferred from the given list. This is
-/// useful when working with lists of unknown length.
+/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// determined based on the given list. This is useful when working with lists
+/// of unknown length.
 ///
 /// ## Examples
 ///
 /// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_ints(of: [1], into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D1 #(X, 1)
-/// // data:
-/// // [1]
-/// Ok(Nil)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1)),
+///   [1],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 2))
-/// > try tensor = from_ints(of: [1, 2, 3, 4], into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D2 #(X, 2), #(Y, 2)
-/// // data:
-/// // [[1, 2],
-/// //  [3, 4]]
-/// Ok(Nil)
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 2],
+///    [3, 4]],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d3(#(X, -1), #(Y, 2), #(Z, 2))
-/// > let list = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > try tensor = from_ints(of: list, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D3 #(X, 2), #(Y, 2), #(Z, 2)
-/// // data:
-/// // [[[1, 2],
-/// //   [3, 4]],
-/// //  [[5, 6],
-/// //   [7, 8]]]
-/// Ok(Nil)
+/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
+/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2), Z(2)),
+///   [[[1, 2],
+///     [3, 4]],
+///    [[5, 6],
+///     [7, 8]]],
+/// )
+/// Nil
 /// ```
 ///
-pub fn from_ints(
-  of list: List(Int),
-  into space: Space(dn, axis),
-) -> Result(Tensor(Int, dn, axis), TensorError) {
-  tensor(from: list, into: space, with: format.int32)
+pub fn from_ints(of xs: List(Int), into space: Space) -> TensorResult(Int32) {
+  tensor(from: xs, into: space, with: format.int32())
+}
+
+/// Results in a `Tensor(Int32)` created from a list of booleans and placed into
+/// a given `Space` on success, or a `TensorError` on failure.
+///
+/// `True` is represented by `1`, `False` by `0`.
+///
+/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// determined based on the given list. This is useful when working with lists
+/// of unknown length.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_bools(of: [True], into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1)),
+///   [1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_bools(of: [True, False, True, True], into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 0],
+///    [1, 1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let xs = [True, False, True, False, False, True, False, True]
+/// > assert Ok(x) = from_bools(of: xs, into: d3)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2), Z(2)),
+///   [[[1, 0],
+///     [1, 0]],
+///    [[0, 1],
+///     [0, 1]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn from_bools(of xs: List(Bool), into space: Space) -> TensorResult(Int32) {
+  xs
+  |> list.map(with: bool.to_int)
+  |> tensor(into: space, with: format.int32())
 }
 
 /// Results in a `Tensor` created from a `Native` representation on success, or
@@ -231,94 +280,41 @@ pub fn from_ints(
 /// ## Examples
 ///
 /// ```gleam
+/// > import argamak/axis.{Infer, X, Y}
 /// > import argamak/format
 /// > import argamak/space
 /// > import gleam/dynamic.{Dynamic}
 /// > external fn erlang_tensor(Dynamic) -> Native =
 /// >   "Elixir.Nx" "tensor"
 /// > let native = erlang_tensor(dynamic.from([[1, 2], [3, 4]]))
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, -1))
-/// > try tensor = from_native(of: native, into: space, with: format.int32)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D2 #(X, 2), #(Y, 2)
-/// // data:
-/// // [[1, 2],
-/// //  [3, 4]]
-/// Ok(Nil)
+/// > assert Ok(d2) = space.d2(X(2), Infer("Y"))
+/// > assert Ok(x) = from_native(of: native, into: d2, with: format.int32)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 2],
+///    [3, 4]],
+/// )
+/// Nil
 /// ```
 ///
 pub fn from_native(
-  of native: Native,
-  into space: Space(dn, axis),
-  with format: fn() -> Format(a),
-) -> Result(Tensor(a, dn, axis), TensorError) {
-  native
-  |> do_to_list
-  |> tensor(into: space, with: format)
+  of x: Native,
+  into space: Space,
+  with format: Format(a),
+) -> TensorResult(a) {
+  x
+  |> Tensor(space: space, format: format)
+  |> reformat(apply: format)
+  |> reshape(into: space)
 }
 
-/// Results in a `Tensor` put into a given `Space` with a `Format` applied to
-/// the data on success, or a `TensorError` on failure.
-///
-fn tensor(
-  from data: a,
-  into space: Space(dn, axis),
-  with format: fn() -> Format(b),
-) -> Result(Tensor(b, dn, axis), TensorError) {
-  fn() {
-    data
-    |> do_tensor([])
-    |> Tensor(format: format(), space: space)
-    |> reshape(into: space)
-    |> result.map(with: as_format(for: _, apply: format))
-  }
-  |> rescue(apply: error)
-  |> result.flatten
-}
-
-if erlang {
-  external fn do_tensor(a, List(Opt(axis))) -> Native =
-    "Elixir.Nx" "tensor"
-}
-
-if javascript {
-  external fn do_tensor(a, discard) -> Native =
-    "../argamak_ffi.mjs" "tensor"
-}
-
-/// Returns the axes of a given `Tensor`.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > axes(from_int(3))
-/// []
-///
-/// > import argamak/space
-/// > type Axis { X }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
-/// > Ok(axes(tensor))
-/// Ok([X])
-///
-/// > type OtherAxis { Alpha Omega }
-/// > assert Ok(space) = space.d2(#(Alpha, 1), #(Omega, 3))
-/// > try tensor = from_ints(of: [1, 2, 3], into: space)
-/// > Ok(axes(tensor))
-/// Ok([Alpha, Omega])
-/// ```
-///
-pub fn axes(tensor: Tensor(a, dn, axis)) -> List(axis) {
-  tensor
-  |> space
-  |> space.axes
-}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Reflection Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Returns the `Format` of a given `Tensor`.
-///
-/// See `argamak/format` for more information.
 ///
 /// ## Examples
 ///
@@ -327,20 +323,72 @@ pub fn axes(tensor: Tensor(a, dn, axis)) -> List(axis) {
 /// > format(from_float(0.))
 /// format.float32()
 ///
+/// > import argamak/axis.{Infer}
 /// > import argamak/space
-/// > type Axis { X }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_ints(of: [1, 2, 3], into: space)
-/// > Ok(format(tensor))
-/// Ok(format.int32())
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > format(x)
+/// format.int32()
 /// ```
 ///
-pub fn format(tensor: Tensor(a, dn, axis)) -> Format(a) {
-  tensor.format
+pub fn format(x: Tensor(a)) -> Format(a) {
+  x.format
+}
+
+/// Returns the `Space` a given `Tensor` is currently in.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > space(from_float(0.)) |> space.axes
+/// []
+///
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > space(x) |> space.axes
+/// [X(3)]
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > space(x) |> space.axes
+/// [X(2), Y(2), Z(2)]
+/// ```
+///
+pub fn space(x: Tensor(a)) -> Space {
+  x.space
+}
+
+/// Returns the `Axes` of a given `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > axes(from_int(3))
+/// []
+///
+/// > import argamak/axis.{Axis, X}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > axes(x)
+/// [X(3)]
+///
+/// > assert Ok(d2) = space.d2(Axis("Alpha", 1), Axis("Omega", 3))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
+/// > axes(x)
+/// [Axis("Alpha", 1), Axis("Omega", 3)]
+/// ```
+///
+pub fn axes(x: Tensor(a)) -> Axes {
+  x
+  |> space
+  |> space.axes
 }
 
 /// Returns the rank of a given `Tensor` as an `Int` representing the number of
-/// dimensions.
+/// `Axes`.
 ///
 /// ## Examples
 ///
@@ -348,24 +396,23 @@ pub fn format(tensor: Tensor(a, dn, axis)) -> Format(a) {
 /// > rank(from_float(0.))
 /// 0
 ///
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_ints(of: [1, 2, 3], into: space)
-/// > Ok(rank(tensor))
-/// Ok(1)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > rank(x)
+/// 1
 ///
-/// > assert Ok(space) = space.d3(#(X, 2), #(Y, 2), #(Z, 2))
-/// > try tensor = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: space)
-/// > Ok(rank(tensor))
-/// Ok(3)
+/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > rank(x)
+/// 3
 /// ```
 ///
-pub fn rank(tensor: Tensor(a, dn, axis)) -> Int {
-  tensor
+pub fn rank(x: Tensor(a)) -> Int {
+  x
   |> space
-  |> space.elements
-  |> list.length
+  |> space.degree
 }
 
 /// Returns the shape of a given `Tensor`.
@@ -376,56 +423,71 @@ pub fn rank(tensor: Tensor(a, dn, axis)) -> Int {
 /// > shape(from_float(0.))
 /// []
 ///
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_ints(of: [1, 2, 3], into: space)
-/// > Ok(shape(tensor))
-/// Ok([3])
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > shape(x)
+/// [3]
 ///
-/// > assert Ok(space) = space.d3(#(X, 2), #(Y, 2), #(Z, 2))
-/// > try tensor = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: space)
-/// > Ok(shape(tensor))
-/// Ok([2, 2, 2])
+/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > shape(x)
+/// [2, 2, 2]
 /// ```
 ///
-pub fn shape(tensor: Tensor(a, dn, axis)) -> List(Int) {
-  tensor
+pub fn shape(x: Tensor(a)) -> Shape {
+  x
   |> space
   |> space.shape
 }
 
-/// Returns the `Space` a given `Tensor` is currently in.
+/// Returns the number of values in a given `Tensor`.
 ///
 /// ## Examples
 ///
 /// ```gleam
+/// > size(from_float(0.))
+/// 1
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(space) = space.d0()
-/// > space(from_float(0.))
-/// space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > size(x)
+/// 3
 ///
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_ints(of: [1, 2, 3], into: space)
-/// > Ok(space(tensor))
-/// Ok(space)
-///
-/// > assert Ok(space) = space.d3(#(X, 2), #(Y, 2), #(Z, 2))
-/// > try tensor = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: space)
-/// > Ok(space(tensor))
-/// Ok(space)
+/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > size(x)
+/// 8
 /// ```
 ///
-pub fn space(tensor: Tensor(a, dn, axis)) -> Space(dn, axis) {
-  tensor.space
+pub fn size(x: Tensor(a)) -> Int {
+  // Optimized via external implementation.
+  x
+  |> to_native
+  |> do_size
 }
+
+if erlang {
+  external fn do_size(Native) -> Int =
+    "argamak_ffi" "size"
+}
+
+if javascript {
+  external fn do_size(Native) -> Int =
+    "../argamak_ffi.mjs" "size"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Transformation Functions               //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Changes the `Format` of a `Tensor`.
 ///
-/// Converting from float formats to integer formats truncates the data. For
-/// consistency, consider using `round`, `floor`, or `ceil` before casting from
-/// float formats to integer formats.
+/// Reformatting from `Float` formats to `Int` formats truncates the data. For
+/// consistency, consider using `round`, `floor`, or `ceiling` beforehand.
 ///
 /// Lowering precision may lead to an overflow or underflow, the outcome of
 /// which depends on platform and compiler.
@@ -434,860 +496,4125 @@ pub fn space(tensor: Tensor(a, dn, axis)) -> Space(dn, axis) {
 ///
 /// ```gleam
 /// > import argamak/format
-/// > as_format(for: from_int(0), apply: format.float32)
-/// from_float(0.)
+/// > reformat(from_int(0), apply: format.float32) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(),
+///   0.,
+/// )
+/// Nil
 ///
+/// > import argamak/axis.{Infer}
 /// > import argamak/space
-/// > type Axis { X }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
-/// > Ok(as_format(for: tensor, apply: format.int32))
-/// from_ints(of: [1, 2, 3], into: space)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > reformat(x, apply: format.int32) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(3)),
+///   [1, 2, 3],
+/// )
+/// Nil
 /// ```
 ///
-pub fn as_format(
-  for tensor: Tensor(a, dn, axis),
-  apply format: fn() -> Format(b),
-) -> Tensor(b, dn, axis) {
-  let format = format()
-  tensor
+pub fn reformat(x: Tensor(a), apply format: Format(b)) -> Tensor(b) {
+  x
   |> to_native
-  |> do_as_format(format.to_native(format))
-  |> Tensor(format: format, space: space(tensor))
+  |> do_reformat(format.to_native(format))
+  |> Tensor(format: format, space: space(x))
 }
 
 if erlang {
-  external fn do_as_format(Native, format.Native) -> Native =
-    "Elixir.Nx" "as_type"
+  external fn do_reformat(Native, format.Native) -> Native =
+    "argamak_ffi" "reformat"
 }
 
 if javascript {
-  external fn do_as_format(Native, format.Native) -> Native =
-    "../argamak_ffi.mjs" "as_type"
+  external fn do_reformat(Native, format.Native) -> Native =
+    "../argamak_ffi.mjs" "reformat"
 }
 
-/// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
-/// success, or a `TensorError` on failure.
-///
-/// The new `Space` cannot be of lower dimensionality than the `Tensor`'s
-/// current `Space`.
-///
-/// The new `Tensor`'s current `Space` must have dimension sizes compatible with
-/// the right-most dimensions of the new `Space`; that is, every current
-/// dimension size must be `1` or equal to its counterpart in the new `Space`.
+/// Results in a `Tensor` placed into a given `Space` on success, or a
+/// `TensorError` on failure.
 ///
 /// ## Examples
 ///
 /// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > let tensor = from_int(0)
-/// > assert Ok(space) = space.d1(#(X, 3))
-/// > try tensor = broadcast(from: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D1 #(X, 3)
-/// // data:
-/// // [0, 0, 0]
-/// Ok(Nil)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = reshape(put: from_float(1.), into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [1.],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > let tensor = from_ints(of: [-1], into: space)
-/// > assert Ok(space) = space.d1(#(Y, 5))
-/// > try tensor = broadcast(from: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D1 #(Y, 5)
-/// // data:
-/// // [-1, -1, -1, -1, -1]
-/// Ok(Nil)
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3., 4.], into: d1)
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = reshape(put: x, into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2)),
+///   [[1., 2.],
+///    [3., 4.]],
+/// )
+/// Nil
 ///
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 3))
-/// > try tensor = broadcast(from: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D2 #(X, 2), #(Y, 3)
-/// // data:
-/// // [[1.0, 2.0, 3.0],
-/// //  [1.0, 2.0, 3.0]]
-/// Ok(Nil)
+/// > assert Ok(d2) = space.d2(X(2), Infer("Y"))
+/// > let xs = [1., 2., 3., 4., 5., 6., 7., 8.]
+/// > assert Ok(x) = from_floats(of: xs, into: d2)
+/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > assert Ok(x) = reshape(put: x, into: d3)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2), Z(2)),
+///   [[[1., 2.],
+///     [3., 4.]],
+///    [[5., 6.],
+///     [7., 8.]]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Y(1), Z(1))
+/// > assert Ok(x) = from_floats(of: [1.], into: d3)
+/// > assert Ok(x) = reshape(put: x, into: space.new())
+/// > print_data(x)
+/// 1.
+/// Nil
 /// ```
 ///
-pub fn broadcast(
-  from tensor: Tensor(a, b, c),
-  into new_space: Space(dn, axis),
-) -> Result(Tensor(a, dn, axis), TensorError) {
-  fn() {
-    let shape =
-      new_space
-      |> space.shape
-      |> list_to_tuple
-    let opts = [
-      new_space
-      |> space.axes
-      |> Names,
-    ]
-    tensor
-    |> to_native
-    |> do_broadcast(shape, opts)
-    |> Tensor(format: format(tensor), space: new_space)
-  }
-  |> rescue(apply: error)
-}
-
-if erlang {
-  external fn do_broadcast(Native, tuple, List(Opt(axis))) -> Native =
-    "Elixir.Nx" "broadcast"
-}
-
-if javascript {
-  external fn do_broadcast(Native, tuple, discard) -> Native =
-    "../argamak_ffi.mjs" "broadcast"
-}
-
-/// Results in a `Tensor` broadcast into a given n-dimensional `Space` on
-/// success, or a `TensorError` on failure.
-///
-/// The new `Space` cannot be of lower dimensionality than the `Tensor`'s
-/// current `Space`.
-///
-/// The given function will be used to map from the elements of the `Tensor`'s
-/// current `Space` to axes of the new `Space`, allowing broadcasting into a
-/// `Space` that would be incompatible for a standard `broadcast` operation.
-/// The function must uniquely map the current `Space`'s axes to the new
-/// `Space`'s axes; that is, duplicate axes will result in a `TensorError`.
-/// Furthermore, the current `Space`'s axes must maintain the same relative
-/// order when mapped to the new `Space`.
-///
-/// The new `Tensor`'s current `Space` must have dimension sizes compatible with
-/// the matching dimensions of the new `Space`; that is, every current dimension
-/// size must be `1` or equal to its counterpart in the new `Space`.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
-/// > assert Ok(space) = space.d2(#(X, 3), #(Y, 2))
-/// > try new_tensor = broadcast_over(
-///     from: tensor,
-///     into: space,
-///     with: fn(_) { X },
-///   )
-/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D2 #(X, 3), #(Y, 2)
-/// // data:
-/// // [[1.0, 1.0],
-/// //  [2.0, 2.0],
-/// //  [3.0, 3.0]]
-/// Ok(Nil)
-///
-/// > try tensor = from_ints(of: [1, 2, 3, 4, 5, 6], into: space)
-/// > assert Ok(space) = space.d3(#(X, 3), #(Y, 2), #(Z, 2))
-/// > try new_tensor = broadcast_over(
-///     from: tensor,
-///     into: space,
-///     with: fn(element) {
-///       let #(axis, _size) = element
-///       case axis {
-///         X -> X
-///         Y -> Z
-///       }
-///     },
-///   )
-/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D3 #(X, 3), #(Y, 2), #(Z, 2)
-/// // data:
-/// // [[[1, 2],
-/// //   [1, 2]],
-/// //  [[3, 4],
-/// //   [3, 4]],
-/// //  [[5, 6],
-/// //   [5, 6]]]
-/// Ok(Nil)
-///
-/// > import gleam/pair
-/// > try new_tensor = broadcast_over(
-///     from: tensor,
-///     into: space,
-///     with: pair.first,
-///   )
-/// > Ok(print(from: new_tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Int32
-/// // space: D3 #(X, 3), #(Y, 2), #(Z, 2)
-/// // data:
-/// // [[[1, 1],
-/// //   [2, 2]],
-/// //  [[3, 3],
-/// //   [4, 4]],
-/// //  [[5, 5],
-/// //   [6, 6]]]
-/// Ok(Nil)
-/// ```
-///
-pub fn broadcast_over(
-  from tensor: Tensor(a, b, c),
-  into new_space: Space(dn, axis),
-  with axes: fn(#(c, Int)) -> axis,
-) -> Result(Tensor(a, dn, axis), TensorError) {
-  let new_elements =
-    new_space
-    |> space.elements
-
-  try mapped_elements =
-    tensor
-    |> space
-    |> space.elements
-    |> list.map(
-      with: axes
-      |> function.compose(fn(axis) {
-        new_elements
-        |> list.find(one_that: fn(element) { element.0 == axis })
-        |> result.replace_error(IncompatibleAxes)
-      }),
-    )
-    |> result.all
-  let axis_map =
-    mapped_elements
-    |> map.from_list
-
-  let pre_shape =
-    new_elements
-    |> list.map(with: fn(element) {
-      axis_map
-      |> map.get(element.0)
-      |> result.unwrap(or: 1)
-    })
-    |> list_to_tuple
-
-  fn() {
-    let shape =
-      new_space
-      |> space.shape
-      |> list_to_tuple
-    let opts = [
-      new_space
-      |> space.axes
-      |> Names,
-    ]
-    tensor
-    |> to_native
-    |> do_reshape(pre_shape, opts)
-    |> do_broadcast(shape, opts)
-    |> Tensor(format: format(tensor), space: new_space)
-  }
-  |> rescue(apply: error)
-}
-
-/// Results in a `Tensor` placed into a given n-dimensional `Space` on success,
-/// or a `TensorError` on failure.
-///
-/// The `Space`'s `Shape` may have a single dimension given as `-1`, in which
-/// case that dimension's size will be inferred from the given list. This is
-/// useful when working with lists of unknown length.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > import argamak/space
-/// > type Axis { X Y Z }
-/// > let tensor = from_float(1.)
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = reshape(put: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D1 #(X, 1)
-/// // data:
-/// // [1.0]
-/// Ok(Nil)
-///
-/// > assert Ok(space) = space.d1(#(X, -1))
-/// > try tensor = from_floats(of: [1., 2., 3., 4.], into: space)
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 2))
-/// > try tensor = reshape(put: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D2 #(X, 2), #(Y, 2)
-/// // data:
-/// // [[1.0, 2.0],
-/// //  [3.0, 4.0]]
-/// Ok(Nil)
-///
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, -1))
-/// > let list = [1., 2., 3., 4., 5., 6., 7., 8.]
-/// > try tensor = from_floats(of: list, into: space)
-/// > assert Ok(space) = space.d3(#(X, -1), #(Y, 2), #(Z, 2))
-/// > try tensor = reshape(put: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: True))
-/// // Tensor
-/// // format: Float32
-/// // space: D3 #(X, 2), #(Y, 2), #(Z, 2)
-/// // data:
-/// // [[[1.0, 2.0],
-/// //   [3.0, 4.0]],
-/// //  [[5.0, 6.0],
-/// //   [7.0, 8.0]]]
-/// Ok(Nil)
-///
-/// > assert Ok(space) = space.d3(#(X, 1), #(Y, 1), #(Z, 1))
-/// > try tensor = from_floats(of: [1.], into: space)
-/// > assert Ok(space) = space.d0()
-/// > try tensor = reshape(put: tensor, into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: False))
-/// // 1.0
-/// Ok(Nil)
-/// ```
-///
-pub fn reshape(
-  put tensor: Tensor(a, b, c),
-  into new_space: Space(dn, axis),
-) -> Result(Tensor(a, dn, axis), TensorError) {
-  try tensor =
-    tensor
-    |> to_native
-    |> Tensor(format: format(tensor), space: new_space)
+pub fn reshape(put x: Tensor(a), into new_space: Space) -> TensorResult(a) {
+  try x =
+    Tensor(..x, space: new_space)
     |> fit
-
-  fn() {
-    let space =
-      tensor
-      |> space
-    let shape =
-      space
-      |> space.shape
-      |> list_to_tuple
-    let opts = [
-      space
-      |> space.axes
-      |> Names,
-    ]
-    tensor
-    |> map_data(with: do_reshape(_, shape, opts))
-  }
-  |> rescue(apply: error)
+  let shape = shape(x)
+  try native =
+    x
+    |> to_native
+    |> do_reshape(shape)
+  Tensor(..x, data: native)
+  |> Ok
 }
 
 if erlang {
-  external fn do_reshape(Native, tuple, List(Opt(axis))) -> Native =
-    "Elixir.Nx" "reshape"
+  external fn do_reshape(Native, Shape) -> NativeResult =
+    "argamak_ffi" "reshape"
 }
 
 if javascript {
-  external fn do_reshape(Native, tuple, discard) -> Native =
+  external fn do_reshape(Native, Shape) -> NativeResult =
     "../argamak_ffi.mjs" "reshape"
 }
 
-/// Converts a `Tensor` without dimensions into a `Float`.
+/// Results in a `Tensor` broadcast into a given `Space` on success, or a
+/// `TensorError` on failure.
+///
+/// The new `Space` cannot have fewer `Axes` than the current `Space`.
+///
+/// Each current `Axis` size must be `1` or equal to its counterpart in the new
+/// `Space`. `Axis` compatibility is considered element-wise, tail-first.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > let tensor = from_float(0.)
-/// > to_float(tensor)
-/// 0.
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(X(3))
+/// > assert Ok(x) = broadcast(from: from_int(0), into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(3)),
+///   [0, 0, 0],
+/// )
+/// Nil
 ///
-/// > import argamak/format
-/// > let tensor = from_int(0)
-/// > let tensor = as_format(for: tensor, apply: format.float32)
-/// > to_float(tensor)
-/// 0.
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > let x = from_ints(of: [-1], into: d1)
+/// > assert Ok(d1) = space.d1(Y(5))
+/// > assert Ok(x) = broadcast(from: x, into: d1)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(5)),
+///   [-1, -1, -1, -1, -1],
+/// )
+/// Nil
+///
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > assert Ok(d2) = space.d2(X(2), Y(3))
+/// > assert Ok(x) = broadcast(from: x, into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(3)),
+///   [[1., 2., 3.],
+///    [1., 2., 3.]],
+/// )
+/// Nil
 /// ```
 ///
-pub fn to_float(tensor: Tensor(Float, D0, axis)) -> Float {
-  tensor
-  |> to_native
-  |> to_number
-}
-
-/// Converts a `Tensor` without dimensions into an `Int`.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > let tensor = from_int(0)
-/// > to_int(tensor)
-/// 0
-///
-/// > import argamak/format
-/// > let tensor = from_float(0.)
-/// > let tensor = as_format(for: tensor, apply: format.int32)
-/// > to_int(tensor)
-/// 0
-/// ```
-///
-pub fn to_int(tensor: Tensor(Int, D0, axis)) -> Int {
-  tensor
-  |> to_native
-  |> to_number
+pub fn broadcast(from x: Tensor(a), into new_space: Space) -> TensorResult(a) {
+  try native =
+    x
+    |> to_native
+    |> do_broadcast(space.shape(new_space))
+  Tensor(..x, data: native, space: new_space)
+  |> Ok
 }
 
 if erlang {
-  external fn to_number(Native) -> a =
-    "Elixir.Nx" "to_number"
+  external fn do_broadcast(Native, Shape) -> NativeResult =
+    "argamak_ffi" "broadcast"
 }
 
 if javascript {
-  external fn to_number(Native) -> a =
-    "../argamak_ffi.mjs" "to_number"
+  external fn do_broadcast(Native, Shape) -> NativeResult =
+    "../argamak_ffi.mjs" "broadcast"
 }
 
-/// Converts a `Tensor` into a flat list of numbers.
+/// A variant of `broadcast` that maps the given `Tensor`'s current `Axes` to
+/// arbitrary counterparts in the new `Space`.
+///
+/// Results in a `Tensor` broadcast into a given `Space` on success, or a
+/// `TensorError` on failure.
+///
+/// The map function allows broadcasting into a `Space` that is incompatible
+/// with a standard `broadcast` operation. Any given new `Axis` must not be
+/// matched with multiple axes from the `Tensor`'s current `Space`, and the
+/// current axes' relative order may be interrupted, but not altered, when axes
+/// are translated to their mapped counterparts.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > to_list(from_int(0))
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > assert Ok(d2) = space.d2(X(3), Y(2))
+/// > assert Ok(y) = broadcast_over(from: x, into: d2, with: fn(_) { "X" })
+/// > print(y)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(3), Y(2)),
+///   [[1., 1.],
+///    [2., 2.],
+///    [3., 3.]],
+/// )
+/// Nil
+///
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6], into: d2)
+/// > assert Ok(d3) = space.d3(X(3), Y(2), Z(2))
+/// > assert Ok(y) = broadcast_over(
+///     from: x,
+///     into: d3,
+///     with: fn(a) {
+///       case axis.name(a) {
+///         "Y" -> "Z"
+///         name -> name
+///       }
+///     },
+///   )
+/// > print(y)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(3), Y(2), Z(2))
+///   [[[1, 2],
+///     [1, 2]],
+///    [[3, 4],
+///     [3, 4]],
+///    [[5, 6],
+///     [5, 6]]],
+/// )
+/// Nil
+///
+/// > assert Ok(y) = broadcast_over(
+///     from: x,
+///     into: d3,
+///     with: axis.name,
+///   )
+/// > print(y)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(3), Y(2), Z(2)),
+///   [[[1, 1],
+///     [2, 2]],
+///    [[3, 3],
+///     [4, 4]],
+///    [[5, 5],
+///     [6, 6]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn broadcast_over(
+  from x: Tensor(a),
+  into new_space: Space,
+  with space_map: fn(Axis) -> String,
+) -> TensorResult(a) {
+  let new_axes = space.axes(new_space)
+
+  // try mapped_axes =
+  //   x
+  //   |> axes
+  //   |> list.map(
+  //     with: space_map
+  //     |> function.compose(fn(name) {
+  //       new_axes
+  //       |> list.find_map(with: fn(axis) {
+  //         case axis.name(axis) == name {
+  //           True ->
+  //             #(name, axis.size(axis))
+  //             |> Ok
+  //           False -> Error(Nil)
+  //         }
+  //       })
+  //       |> result.replace_error(IncompatibleAxes)
+  //     }),
+  //   )
+  //   |> result.all
+  try mapped_axes =
+    result.all({
+      use axis <- list.map(axes(x))
+      let name = space_map(axis)
+      {
+        use axis <- list.find_map(new_axes)
+        case axis.name(axis) == name {
+          True ->
+            #(name, axis.size(axis))
+            |> Ok
+          False -> Error(Nil)
+        }
+      }
+      |> result.replace_error(IncompatibleAxes)
+    })
+  let axis_map = map.from_list(mapped_axes)
+
+  // TODO: use higher level functions?
+  // let pre_shape =
+  //   new_axes
+  //   |> list.map(with: fn(axis) {
+  //     axis_map
+  //     |> map.get(axis.name(axis))
+  //     |> result.unwrap(or: 1)
+  //   })
+  let pre_shape = {
+    use axis <- list.map(new_axes)
+    axis_map
+    |> map.get(axis.name(axis))
+    |> result.unwrap(or: 1)
+  }
+
+  let shape = space.shape(new_space)
+  try native =
+    x
+    |> to_native
+    |> do_reshape(pre_shape)
+  try native = do_broadcast(native, shape)
+  Tensor(..x, data: native, space: new_space)
+  |> Ok
+}
+
+/// Removes from the given `Tensor` axes of size `1` for which `filter` returns
+/// `True`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > squeeze(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [3], into: d1)
+/// > squeeze(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > squeeze(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1)),
+///   [3],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [1, 2], into: d3)
+/// > squeeze(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 2],
+/// )
+/// Nil
+///
+/// > squeeze(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[1, 2]],
+/// )
+/// Nil
+/// ```
+///
+pub fn squeeze(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  // let filter = fn(axis) {
+  //   case axis.size(axis) {
+  //     1 -> filter(axis)
+  //     _else -> False
+  //   }
+  // }
+  // reducible_over_axes(do_squeeze, x, filter, Away)
+  use axis <- reducible_over_axes(do_squeeze, x, _, Away)
+  case axis.size(axis) {
+    1 -> filter(axis)
+    _else -> False
+  }
+}
+
+if erlang {
+  external fn do_squeeze(Native, Indices) -> Native =
+    "argamak_ffi" "squeeze"
+}
+
+if javascript {
+  external fn do_squeeze(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "squeeze"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Logical Functions                      //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Equality is represented by `1`, inequality by `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = equal(is: a, to: from_int(4))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = equal(is: a, to: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[0, 1],
+///    [1, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > equal(is: b, to: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > equal(is: b, to: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_equal, a, b)
+}
+
+if erlang {
+  external fn do_equal(Native, Native) -> NativeResult =
+    "argamak_ffi" "equal"
+}
+
+if javascript {
+  external fn do_equal(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "equal"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Inequality is represented by `1`, equality by `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = not_equal(is: a, to: from_int(4))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = not_equal(is: a, to: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 0],
+///    [0, 1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > not_equal(is: b, to: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > not_equal(is: b, to: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn not_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_not_equal, a, b)
+}
+
+if erlang {
+  external fn do_not_equal(Native, Native) -> NativeResult =
+    "argamak_ffi" "not_equal"
+}
+
+if javascript {
+  external fn do_not_equal(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "not_equal"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values in the first `Tensor` that are greater than those in the second are
+/// represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = greater(is: a, than: from_int(4))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = greater(is: a, than: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 0],
+///    [0, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > greater(is: b, than: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > greater(is: b, than: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn greater(is a: Tensor(a), than b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_greater, a, b)
+}
+
+if erlang {
+  external fn do_greater(Native, Native) -> NativeResult =
+    "argamak_ffi" "greater"
+}
+
+if javascript {
+  external fn do_greater(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "greater"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values in the first `Tensor` that are greater than or equal to those in the
+/// second are represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = greater_or_equal(is: a, to: from_int(4))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = greater_or_equal(is: a, to: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 1],
+///    [1, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > greater_or_equal(is: b, to: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > greater_or_equal(is: b, to: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn greater_or_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_greater_or_equal, a, b)
+}
+
+if erlang {
+  external fn do_greater_or_equal(Native, Native) -> NativeResult =
+    "argamak_ffi" "greater_or_equal"
+}
+
+if javascript {
+  external fn do_greater_or_equal(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "greater_or_equal"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values in the first `Tensor` that are less than those in the second are
+/// represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = less(is: a, than: from_int(5))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = less(is: a, than: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[0, 0],
+///    [0, 1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > less(is: b, than: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > less(is: b, than: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn less(is a: Tensor(a), than b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_less, a, b)
+}
+
+if erlang {
+  external fn do_less(Native, Native) -> NativeResult =
+    "argamak_ffi" "less"
+}
+
+if javascript {
+  external fn do_less(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "less"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values in the first `Tensor` that are less than or equal to those in the
+/// second are represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > assert Ok(x) = less_or_equal(is: a, to: from_int(5))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > assert Ok(x) = less_or_equal(is: a, to: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[0, 1],
+///    [1, 1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > less_or_equal(is: b, to: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > less_or_equal(is: b, to: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn less_or_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_less_or_equal, a, b)
+}
+
+if erlang {
+  external fn do_less_or_equal(Native, Native) -> NativeResult =
+    "argamak_ffi" "less_or_equal"
+}
+
+if javascript {
+  external fn do_less_or_equal(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "less_or_equal"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values that are nonzero in both the first and second `Tensor`s are
+/// represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > assert Ok(x) = logical_and(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > assert Ok(x) = logical_and(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[0, 0],
+///    [1, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > logical_and(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > logical_and(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn logical_and(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_logical_and, a, b)
+}
+
+if erlang {
+  external fn do_logical_and(Native, Native) -> NativeResult =
+    "argamak_ffi" "logical_and"
+}
+
+if javascript {
+  external fn do_logical_and(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "logical_and"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values that are nonzero in either the first or second `Tensor`, or both, are
+/// represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > assert Ok(x) = logical_or(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > assert Ok(x) = logical_or(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 1],
+///    [1, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > logical_or(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > logical_or(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn logical_or(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_logical_or, a, b)
+}
+
+if erlang {
+  external fn do_logical_or(Native, Native) -> NativeResult =
+    "argamak_ffi" "logical_or"
+}
+
+if javascript {
+  external fn do_logical_or(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "logical_or"
+}
+
+/// Results in a `Tensor` that is the element-wise comparison of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// Values that are nonzero in either the first or second `Tensor`, but not
+/// both, are represented by `1`, otherwise `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > assert Ok(x) = logical_xor(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 1],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > assert Ok(x) = logical_xor(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 1],
+///    [0, 0]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > logical_xor(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > logical_xor(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn logical_xor(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_logical_xor, a, b)
+}
+
+if erlang {
+  external fn do_logical_xor(Native, Native) -> NativeResult =
+    "argamak_ffi" "logical_xor"
+}
+
+if javascript {
+  external fn do_logical_xor(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "logical_xor"
+}
+
+/// Returns the element-wise logical opposite of the given `Tensor`.
+///
+/// Values that are nonzero are represented by `1`, otherwise `0`, with `Format`
+/// retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > logical_not(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > logical_not(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > logical_not(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[0],
+///     [0],
+///     [1]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn logical_not(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_logical_not(to_native(x)))
+}
+
+if erlang {
+  external fn do_logical_not(Native) -> Native =
+    "argamak_ffi" "logical_not"
+}
+
+if javascript {
+  external fn do_logical_not(Native) -> Native =
+    "../argamak_ffi.mjs" "logical_not"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Arithmetic Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Results in a `Tensor` that is the element-wise addition of the given tensors
+/// on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [0, 9], into: d1)
+/// > assert Ok(x) = add(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [ 3, 12],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > assert Ok(x) = add(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 0, 13],
+///    [ 5,  9]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > add(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > add(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn add(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_add, a, b)
+}
+
+if erlang {
+  external fn do_add(Native, Native) -> NativeResult =
+    "argamak_ffi" "add"
+}
+
+if javascript {
+  external fn do_add(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "add"
+}
+
+/// Results in a `Tensor` that is the element-wise subtraction of one `Tensor`
+/// from another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [0, 9], into: d1)
+/// > assert Ok(x) = subtract(from: a, value: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [-3,  6],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > assert Ok(x) = subtract(from: a, value: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 0,  5],
+///    [-5,  9]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > subtract(from: b, value: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > subtract(from: b, value: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn subtract(from a: Tensor(a), value b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_subtract, a, b)
+}
+
+if erlang {
+  external fn do_subtract(Native, Native) -> NativeResult =
+    "argamak_ffi" "subtract"
+}
+
+if javascript {
+  external fn do_subtract(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "subtract"
+}
+
+/// Results in a `Tensor` that is the element-wise multiplication of the given
+/// tensors on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = multiply(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [ 3, 27],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > assert Ok(x) = multiply(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 0, 36],
+///    [ 5, 81]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > multiply(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > multiply(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn multiply(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_multiply, a, b)
+}
+
+if erlang {
+  external fn do_multiply(Native, Native) -> NativeResult =
+    "argamak_ffi" "multiply"
+}
+
+if javascript {
+  external fn do_multiply(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "multiply"
+}
+
+/// Results in a `Tensor` that is the element-wise division of one `Tensor` by
+/// another on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// As with Gleam's operators, division by zero returns zero.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = divide(from: a, by: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 3],
+/// )
+/// Nil
+///
+/// > let a = reformat(a, apply: format.float32())
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_floats(of: [0., 4., 5., 9.], into: d2)
+/// > assert Ok(x) = divide(from: a, by: b)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2)),
+///   [[  0., 2.25],
+///    [ 0.2,   1.]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_floats(of: [4., 5., 0.], into: d3)
+/// > divide(from: b, by: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > divide(from: b, by: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_divide, a, _)
+  |> permit_zero(in: b)
+}
+
+if erlang {
+  external fn do_divide(Native, Native) -> NativeResult =
+    "argamak_ffi" "divide"
+}
+
+if javascript {
+  external fn do_divide(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "divide"
+}
+
+/// A variant of `divide` that results in a `TensorError` if any value of the
+/// divisor is zero.
+///
+/// Results in a `Tensor` that is the element-wise division of one `Tensor` by
+/// another on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = try_divide(from: a, by: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 3],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > try_divide(from: a, by: b)
+/// Error(ZeroDivision)
+/// ```
+///
+pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
+  try b = all_nonzero(b)
+  divide(from: a, by: b)
+}
+
+/// Results in a `Tensor` that is the element-wise remainder when dividing one
+/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// As with Gleam's operators, division by zero returns zero.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [13, -13], into: d1)
+/// > assert Ok(x) = remainder(from: a, divided_by: from_int(0))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
+/// > assert Ok(x) = remainder(from: a, divided_by: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 1, -1],
+///    [ 1, -1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > remainder(from: b, divided_by: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > remainder(from: b, divided_by: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn remainder(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) {
+  do_remainder(a, b)
+}
+
+if erlang {
+  fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+    broadcastable(erlang_remainder, a, _)
+    |> permit_zero(in: b)
+  }
+
+  external fn erlang_remainder(Native, Native) -> NativeResult =
+    "argamak_ffi" "remainder"
+}
+
+if javascript {
+  fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+    try adjust = sign_not_equal(a, b)
+    try adjust = multiply(adjust, b)
+    try x = modulo(from: a, divided_by: b)
+    subtract(from: x, value: adjust)
+  }
+}
+
+/// A variant of `remainder` that results in a `TensorError` if any value of the
+/// divisor is zero.
+///
+/// Results in a `Tensor` that is the element-wise remainder when dividing one
+/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = try_remainder(from: a, divided_by: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > try_remainder(from: a, divided_by: b)
+/// Error(ZeroDivision)
+/// ```
+///
+pub fn try_remainder(
+  from a: Tensor(a),
+  divided_by b: Tensor(a),
+) -> TensorResult(a) {
+  try b = all_nonzero(b)
+  remainder(from: a, divided_by: b)
+}
+
+/// Results in a `Tensor` that is the element-wise modulus when dividing one
+/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// As with Gleam's operators, division by zero returns zero.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [13, -13], into: d1)
+/// > assert Ok(x) = modulo(from: a, divided_by: from_int(0))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [0, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
+/// > assert Ok(x) = modulo(from: a, divided_by: b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 1, 2],
+///    [ -2, -1]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > modulo(from: b, divided_by: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > modulo(from: b, divided_by: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) {
+  do_modulo(a, b)
+}
+
+if erlang {
+  fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+    try adjust = sign_not_equal(a, b)
+    try adjust = multiply(adjust, b)
+    try x = remainder(from: a, divided_by: b)
+    add(x, adjust)
+  }
+}
+
+if javascript {
+  fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+    broadcastable(javascript_modulo, a, _)
+    |> permit_zero(in: b)
+  }
+
+  external fn javascript_modulo(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "modulo"
+}
+
+/// A variant of `modulo` that results in a `TensorError` if any value of the
+/// divisor is zero.
+///
+/// Results in a `Tensor` that is the element-wise modulus when dividing one
+/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = try_modulo(from: a, divided_by: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > try_modulo(from: a, divided_by: b)
+/// Error(ZeroDivision)
+/// ```
+///
+pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) {
+  try b = all_nonzero(b)
+  modulo(from: a, divided_by: b)
+}
+
+/// Results in a `Tensor` that is the element-wise raising of one `Tensor` to
+/// the power of another on success (broadcast as needed), or a `TensorError` on
+/// failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = power(raise: a, to_the: from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [  1, 729],
+/// )
+/// Nil
+///
+/// > let a = reformat(a, apply: format.float32())
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_floats(of: [0., 0.4, 0.5, 0.9], into: d2)
+/// > assert Ok(x) = power(raise: a, to_the: b)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(2), Y(2)),
+///   [[   1., 2.408],
+///    [   1., 7.225]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_floats(of: [4., 5., 0.], into: d3)
+/// > power(raise: b, to_the: c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > power(raise: b, to_the: c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn power(raise a: Tensor(a), to_the b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_power, a, b)
+}
+
+if erlang {
+  external fn do_power(Native, Native) -> NativeResult =
+    "argamak_ffi" "power"
+}
+
+if javascript {
+  external fn do_power(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "power"
+}
+
+/// Results in a `Tensor` that is the element-wise maximum of the given tensors
+/// on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = max(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [3, 9],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
+/// > assert Ok(x) = max(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 9],
+///    [5, 9]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > max(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > max(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn max(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_max, a, b)
+}
+
+if erlang {
+  external fn do_max(Native, Native) -> NativeResult =
+    "argamak_ffi" "max"
+}
+
+if javascript {
+  external fn do_max(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "max"
+}
+
+/// Results in a `Tensor` that is the element-wise minimum of the given tensors
+/// on success (broadcast as needed), or a `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("Y"))
+/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > assert Ok(x) = min(a, from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2)),
+///   [1, 3],
+/// )
+/// Nil
+///
+/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
+/// > assert Ok(x) = min(a, b)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[ 0,  4],
+///    [ 1, -9]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > min(b, c)
+/// Error(SpaceErrors([
+///   SpaceError(CannotMerge, X(2)),
+///   SpaceError(CannotMerge, Y(2)),
+/// ]))
+///
+/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > min(b, c)
+/// Error(CannotBroadcast)
+/// ```
+///
+pub fn min(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(do_min, a, b)
+}
+
+if erlang {
+  external fn do_min(Native, Native) -> NativeResult =
+    "argamak_ffi" "min"
+}
+
+if javascript {
+  external fn do_min(Native, Native) -> NativeResult =
+    "../argamak_ffi.mjs" "min"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Basic Math Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Returns the element-wise absolute value of the given `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > absolute_value(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > absolute_value(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.3],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > absolute_value(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[1],
+///     [8],
+///     [0]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn absolute_value(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_absolute_value(to_native(x)))
+}
+
+if erlang {
+  external fn do_absolute_value(Native) -> Native =
+    "argamak_ffi" "absolute_value"
+}
+
+if javascript {
+  external fn do_absolute_value(Native) -> Native =
+    "../argamak_ffi.mjs" "absolute_value"
+}
+
+/// Returns the element-wise negation of the given `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > negate(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   -3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > negate(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.3],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > negate(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[ 1],
+///     [-8],
+///     [ 0]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn negate(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_negate(to_native(x)))
+}
+
+if erlang {
+  external fn do_negate(Native) -> Native =
+    "argamak_ffi" "negate"
+}
+
+if javascript {
+  external fn do_negate(Native) -> Native =
+    "../argamak_ffi.mjs" "negate"
+}
+
+/// Returns an element-wise indication of the sign of the given `Tensor`.
+///
+/// Positive numbers are represented by `1`, negative numbers by `-1`, and zero
+/// by `0`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > sign(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > sign(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [-1.],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > sign(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[-1],
+///     [ 1],
+///     [ 0]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn sign(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_sign(to_native(x)))
+}
+
+if erlang {
+  external fn do_sign(Native) -> Native =
+    "argamak_ffi" "sign"
+}
+
+if javascript {
+  external fn do_sign(Native) -> Native =
+    "../argamak_ffi.mjs" "sign"
+}
+
+/// Returns the element-wise ceiling of the given `Tensor`, with `Format`
+/// retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > ceiling(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > ceiling(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > ceiling(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[-1.],
+///     [ 8.],
+///     [ 0.]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn ceiling(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_ceiling(to_native(x)))
+}
+
+if erlang {
+  external fn do_ceiling(Native) -> Native =
+    "argamak_ffi" "ceiling"
+}
+
+if javascript {
+  external fn do_ceiling(Native) -> Native =
+    "../argamak_ffi.mjs" "ceiling"
+}
+
+/// Returns the element-wise floor of the given `Tensor`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > floor(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > floor(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [-1.],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > floor(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[-2.],
+///     [ 7.],
+///     [ 0.]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn floor(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_floor(to_native(x)))
+}
+
+if erlang {
+  external fn do_floor(Native) -> Native =
+    "argamak_ffi" "floor"
+}
+
+if javascript {
+  external fn do_floor(Native) -> Native =
+    "../argamak_ffi.mjs" "floor"
+}
+
+/// Returns the element-wise rounding of the given `Tensor`, with `Format`
+/// retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > round(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   3,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > round(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [-1.],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > round(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[-1.],
+///     [ 8.],
+///     [ 0.]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn round(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_round(to_native(x)))
+}
+
+if erlang {
+  external fn do_round(Native) -> Native =
+    "argamak_ffi" "round"
+}
+
+if javascript {
+  external fn do_round(Native) -> Native =
+    "../argamak_ffi.mjs" "round"
+}
+
+/// Returns the element-wise natural exponential (Euler's number raised to the
+/// power of `x`) of the given `Tensor`, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > let x = from_int(3)
+/// > exp(x) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   20,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > exp(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.223],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > exp(x) |> print
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[   0.301],
+///     [2440.603],
+///     [      1.]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn exp(x: Tensor(a)) -> Tensor(a) {
+  Tensor(..x, data: do_exp(to_native(x)))
+}
+
+if erlang {
+  external fn do_exp(Native) -> Native =
+    "argamak_ffi" "exp"
+}
+
+if javascript {
+  external fn do_exp(Native) -> Native =
+    "../argamak_ffi.mjs" "exp"
+}
+
+/// Results in the element-wise square root of the given `Tensor` on success, or
+/// a `TensorError` on failure, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > assert Ok(x) = square_root(from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1.5], into: d1)
+/// > assert Ok(x) = square_root(x)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [1.225],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = square_root(x)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[1.095],
+///     [2.793],
+///     [   0.]]],
+/// )
+/// Nil
+///
+/// > square_root(from_float(-0.1))
+/// Error(InvalidData)
+/// ```
+///
+pub fn square_root(x: Tensor(a)) -> TensorResult(a) {
+  try native =
+    x
+    |> to_native
+    |> do_square_root
+  Tensor(..x, data: native)
+  |> Ok
+}
+
+if erlang {
+  external fn do_square_root(Native) -> NativeResult =
+    "argamak_ffi" "square_root"
+}
+
+if javascript {
+  external fn do_square_root(Native) -> NativeResult =
+    "../argamak_ffi.mjs" "square_root"
+}
+
+/// Results in the element-wise natural logarithm of the given `Tensor` on
+/// success, or a `TensorError` on failure, with `Format` retained.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > assert Ok(x) = ln(from_int(3))
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_floats(of: [1.5], into: d1)
+/// > assert Ok(x) = ln(x)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1)),
+///   [0.405],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = ln(x)
+/// > print(x)
+/// Tensor(
+///   Format(Float32),
+///   Space(X(1), Y(3), Z(1)),
+///   [[[    0.182],
+///     [    2.054],
+///     [-Infinity]]],
+/// )
+/// Nil
+///
+/// > ln(from_float(-0.1))
+/// Error(InvalidData)
+/// ```
+///
+pub fn ln(x: Tensor(a)) -> TensorResult(a) {
+  try native =
+    x
+    |> to_native
+    |> do_ln
+  Tensor(..x, data: native)
+  |> Ok
+}
+
+if erlang {
+  external fn do_ln(Native) -> NativeResult =
+    "argamak_ffi" "ln"
+}
+
+if javascript {
+  external fn do_ln(Native) -> NativeResult =
+    "../argamak_ffi.mjs" "ln"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Reduction Functions                    //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Reduces the given `Tensor` over select axes to `1` if all values across
+/// those axes are nonzero, otherwise `0`, with `Format` retained.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > all(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > all(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [1, 2], into: d3)
+/// > all(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > all(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[1, 1]],
+/// )
+/// Nil
+/// ```
+///
+pub fn all(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_all, x, filter, Away)
+}
+
+if erlang {
+  external fn do_all(Native, Indices) -> Native =
+    "argamak_ffi" "all"
+}
+
+if javascript {
+  external fn do_all(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "all"
+}
+
+/// A variant of `all` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [0, 2], into: d3)
+/// > in_situ_all(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[0],
+///     [1]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_all(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_all, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to `1` if any values across
+/// those axes are nonzero, otherwise `0`, with `Format` retained.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > any(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > any(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [1, 0],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [0, 0], into: d3)
+/// > any(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > any(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[0, 0]],
+/// )
+/// Nil
+/// ```
+///
+pub fn any(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_any, x, filter, Away)
+}
+
+if erlang {
+  external fn do_any(Native, Indices) -> Native =
+    "argamak_ffi" "any"
+}
+
+if javascript {
+  external fn do_any(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "any"
+}
+
+/// A variant of `any` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > assert Ok(x) = from_ints(of: [0, 2], into: d3)
+/// > in_situ_any(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[0],
+///     [1]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_any(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_any, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over a select `Axis` to the lowest index of the
+/// max value across that `Axis`, with `Format` retained.
+///
+/// The first `Axis` for which the given `find` function returns `True` is
+/// selected for reduction and will be removed from the reduced tensor's
+/// `Space`.
+///
+/// If the `find` function returns `False` for every `Axis`, the `Tensor` will
+/// be flattened and the operation applied over the remaining `Axis`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > arg_max(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > arg_max(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > arg_max(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2), Z(2)),
+///   [[0, 0],
+///    [0, 0]],
+/// )
+/// Nil
+///
+/// > arg_max(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[1, 0]],
+/// )
+/// Nil
+/// ```
+///
+pub fn arg_max(from x: Tensor(a), with find: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axis(do_arg_max, x, find, Away)
+}
+
+if erlang {
+  external fn do_arg_max(Native, Int) -> Native =
+    "argamak_ffi" "arg_max"
+}
+
+if javascript {
+  external fn do_arg_max(Native, Int) -> Native =
+    "../argamak_ffi.mjs" "arg_max"
+}
+
+/// A variant of `arg_max` that preserves all axes from the given `Tensor`.
+///
+/// An `Axis` for which the given `find` function returns `True` will retain a
+/// size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > in_situ_arg_max(x, with: fn(a) { axis.name(a) == "Y" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(2)),
+///   [[[1, 0]]],
+/// )
+/// Nil
+///
+/// > in_situ_arg_max(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[1],
+///     [0]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_arg_max(
+  from x: Tensor(a),
+  with find: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axis(do_arg_max, x, find, InSitu)
+}
+
+/// Reduces the given `Tensor` over a select `Axis` to the lowest index of the
+/// min value across that `Axis`, with `Format` retained.
+///
+/// The first `Axis` for which the given `find` function returns `True` is
+/// selected for reduction and will be removed from the reduced tensor's
+/// `Space`.
+///
+/// If the `find` function returns `False` for every `Axis`, the `Tensor` will
+/// be flattened and the operation applied over the remaining `Axis`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > arg_min(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > arg_min(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > arg_min(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(Y(2), Z(2)),
+///   [[0, 0],
+///    [0, 0]],
+/// )
+/// Nil
+///
+/// > arg_min(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[0, 1]],
+/// )
+/// Nil
+/// ```
+///
+pub fn arg_min(from x: Tensor(a), with find: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axis(do_arg_min, x, find, Away)
+}
+
+if erlang {
+  external fn do_arg_min(Native, Int) -> Native =
+    "argamak_ffi" "arg_min"
+}
+
+if javascript {
+  external fn do_arg_min(Native, Int) -> Native =
+    "../argamak_ffi.mjs" "arg_min"
+}
+
+/// A variant of `arg_min` that preserves all axes from the given `Tensor`.
+///
+/// An `Axis` for which the given `find` function returns `True` will retain a
+/// size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > in_situ_arg_min(x, with: fn(a) { axis.name(a) == "Y" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(2)),
+///   [[[0, 1]]],
+/// )
+/// Nil
+///
+/// > in_situ_arg_min(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[0],
+///     [1]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_arg_min(
+  from x: Tensor(a),
+  with find: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axis(do_arg_min, x, find, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to the max value across those
+/// axes.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > max_over(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   2,
+/// )
+/// Nil
+///
+/// > max_over(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [-1,  2],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > max_over(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   4,
+/// )
+/// Nil
+///
+/// > max_over(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[4, 3]],
+/// )
+/// Nil
+/// ```
+///
+pub fn max_over(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_max_over, x, filter, Away)
+}
+
+if erlang {
+  external fn do_max_over(Native, Indices) -> Native =
+    "argamak_ffi" "max_over"
+}
+
+if javascript {
+  external fn do_max_over(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "max_over"
+}
+
+/// A variant of `max_over` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > in_situ_max_over(x, with: fn(a) { axis.name(a) == "Y" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(2)),
+///   [[[3, 4]]],
+/// )
+/// Nil
+///
+/// > in_situ_max_over(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[4],
+///     [3]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_max_over(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_max_over, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to the min value across those
+/// axes.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > min_over(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   -1,
+/// )
+/// Nil
+///
+/// > min_over(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [-1,  2],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > min_over(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > min_over(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[1, 2]],
+/// )
+/// Nil
+/// ```
+///
+pub fn min_over(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_min_over, x, filter, Away)
+}
+
+if erlang {
+  external fn do_min_over(Native, Indices) -> Native =
+    "argamak_ffi" "min_over"
+}
+
+if javascript {
+  external fn do_min_over(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "min_over"
+}
+
+/// A variant of `min_over` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > in_situ_min_over(x, with: fn(a) { axis.name(a) == "Y" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(2)),
+///   [[[1, 2]]],
+/// )
+/// Nil
+///
+/// > in_situ_min_over(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[1],
+///     [2]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_min_over(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_min_over, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to the sum of the values across
+/// those axes.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > sum(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   1,
+/// )
+/// Nil
+///
+/// > sum(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [-1,  2],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
+/// > sum(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   9,
+/// )
+/// Nil
+///
+/// > sum(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[6, 3]],
+/// )
+/// Nil
+/// ```
+///
+pub fn sum(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_sum, x, filter, Away)
+}
+
+if erlang {
+  external fn do_sum(Native, Indices) -> Native =
+    "argamak_ffi" "sum"
+}
+
+if javascript {
+  external fn do_sum(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "sum"
+}
+
+/// A variant of `sum` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
+/// > in_situ_sum(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(1)),
+///   [[[9]]],
+/// )
+/// Nil
+///
+/// > in_situ_sum(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[6],
+///     [3]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_sum(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_sum, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to the product of the values
+/// across those axes.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > product(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   -2,
+/// )
+/// Nil
+///
+/// > product(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [-1,  2],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > product(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   24,
+/// )
+/// Nil
+///
+/// > product(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[4, 6]],
+/// )
+/// Nil
+/// ```
+///
+pub fn product(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_product, x, filter, Away)
+}
+
+if erlang {
+  external fn do_product(Native, Indices) -> Native =
+    "argamak_ffi" "product"
+}
+
+if javascript {
+  external fn do_product(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "product"
+}
+
+/// A variant of `product` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > in_situ_product(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(1)),
+///   [[[24]]],
+/// )
+/// Nil
+///
+/// > in_situ_product(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[4],
+///     [6]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_product(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_product, x, filter, InSitu)
+}
+
+/// Reduces the given `Tensor` over select axes to the mean of the values across
+/// those axes.
+///
+/// Any `Axis` for which the given `filter` function returns `True` is selected
+/// for reduction and will be removed from the reduced tensor's `Space`.
+///
+/// If the `filter` function returns `False` for every `Axis`, all axes will be
+/// retained and the operation applied to every value of the `Tensor`
+/// individually.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > mean(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   0,
+/// )
+/// Nil
+///
+/// > mean(x, with: fn(_) { False }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2)),
+///   [-1,  2],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_floats(of: [1., 4., 3., 2.], into: d3)
+/// > mean(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(),
+///   2.5,
+/// )
+/// Nil
+///
+/// > mean(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2)),
+///   [[2.5, 2.5]],
+/// )
+/// Nil
+/// ```
+///
+pub fn mean(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
+  reducible_over_axes(do_mean, x, filter, Away)
+}
+
+if erlang {
+  external fn do_mean(Native, Indices) -> Native =
+    "argamak_ffi" "mean"
+}
+
+if javascript {
+  external fn do_mean(Native, Indices) -> Native =
+    "../argamak_ffi.mjs" "mean"
+}
+
+/// A variant of `mean` that preserves all axes from the given `Tensor`.
+///
+/// Any `Axis` for which the given `filter` function returns `True` will retain
+/// a size of `1` after the operation.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > assert Ok(x) = from_floats(of: [1., 4., 3., 2.], into: d3)
+/// > in_situ_product(x, with: fn(_) { True }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(1), Z(1)),
+///   [[[2.5]]],
+/// )
+/// Nil
+///
+/// > in_situ_product(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// Tensor(
+///   Format(Int32),
+///   Space(X(1), Y(2), Z(1)),
+///   [[[2.5],
+///     [2.5]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn in_situ_mean(
+  from x: Tensor(a),
+  with filter: fn(Axis) -> Bool,
+) -> Tensor(a) {
+  reducible_over_axes(do_mean, x, filter, InSitu)
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Slicing & Joining Functions            //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+// TODO
+// concat
+// take
+//   take_along_axis
+//   gather
+// reverse
+// slice
+// put_slice
+// split
+// tile
+// stack
+// unstack
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Conversion Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Results in a `Float` converted from a shapeless `Tensor` on success, or a
+/// `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_float(from_float(0.))
+/// Ok(0.)
+///
+/// > to_float(from_int(0))
+/// Ok(0.)
+///
+/// import argamak/axis.{Infer}
+/// import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > to_float(x)
+/// Error(IncompatibleShape)
+/// ```
+///
+pub fn to_float(x: Tensor(a)) -> Result(Float, TensorError) {
+  x
+  |> to_native
+  |> do_to_float
+}
+
+if erlang {
+  external fn do_to_float(Native) -> Result(Float, TensorError) =
+    "argamak_ffi" "to_float"
+}
+
+if javascript {
+  external fn do_to_float(Native) -> Result(Float, TensorError) =
+    "../argamak_ffi.mjs" "to_float"
+}
+
+/// Results in a `Int` converted from a shapeless `Tensor` on success, or a
+/// `TensorError` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_int(from_float(0.))
+/// Ok(0)
+///
+/// > to_int(from_int(0))
+/// Ok(0)
+///
+/// import argamak/axis.{Infer}
+/// import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > to_int(x)
+/// Error(IncompatibleShape)
+/// ```
+///
+pub fn to_int(x: Tensor(a)) -> Result(Int, TensorError) {
+  x
+  |> to_native
+  |> do_to_int
+}
+
+if erlang {
+  external fn do_to_int(Native) -> Result(Int, TensorError) =
+    "argamak_ffi" "to_int"
+}
+
+if javascript {
+  external fn do_to_int(Native) -> Result(Int, TensorError) =
+    "../argamak_ffi.mjs" "to_int"
+}
+
+/// Results in a `Bool` converted from a shapeless `Tensor` on success, or a
+/// `TensorError` on failure.
+///
+/// Nonzero values become `True`, otherwise `False`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_bool(from_float(0.))
+/// Ok(False)
+///
+/// > to_bool(from_int(1))
+/// Ok(True)
+///
+/// import argamak/axis.{Infer}
+/// import argamak/space
+/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > to_bool(x)
+/// Error(IncompatibleShape)
+/// ```
+///
+pub fn to_bool(x: Tensor(a)) -> Result(Bool, TensorError) {
+  x
+  // Cast to "bool" first as truncation may skew results otherwise
+  |> all(with: fn(_) { False })
+  |> to_int
+  |> result.map(with: int_to_bool)
+}
+
+/// Converts a `Tensor` into a flat list of floats.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_floats(from_int(0))
+/// [0.]
+///
+/// > import argamak/axis.{X, Y}
+/// > import argamak/space
+/// > assert Ok(d2) = space.d2(X(3), Y(1))
+/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d2)
+/// > to_floats(x)
+/// [1., 2., 3.]
+/// ```
+///
+pub fn to_floats(x: Tensor(a)) -> List(Float) {
+  x
+  |> to_native
+  |> do_to_floats
+}
+
+if erlang {
+  external fn do_to_floats(Native) -> List(Float) =
+    "argamak_ffi" "to_floats"
+}
+
+if javascript {
+  external fn do_to_floats(Native) -> List(Float) =
+    "../argamak_ffi.mjs" "to_floats"
+}
+
+/// Converts a `Tensor` into a flat list of integers.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_ints(from_float(0.))
 /// [0]
 ///
+/// > import argamak/axis.{X, Y}
 /// > import argamak/space
-/// > type Axis { X Y }
-/// > assert Ok(space) = space.d2(#(X, 3), #(Y, 1))
-/// > try tensor = from_floats(of: [1., 2., 3.], into: space)
-/// > Ok(to_list(tensor))
-/// Ok([1., 2., 3.])
+/// > assert Ok(d2) = space.d2(X(3), Y(1))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
+/// > to_ints(x)
+/// [1, 2, 3]
 /// ```
 ///
-pub fn to_list(tensor: Tensor(a, dn, axis)) -> List(a) {
-  tensor
+pub fn to_ints(x: Tensor(a)) -> List(Int) {
+  x
   |> to_native
-  |> do_to_list
+  |> do_to_ints
 }
 
 if erlang {
-  external fn do_to_list(Native) -> List(a) =
-    "Elixir.Nx" "to_flat_list"
+  external fn do_to_ints(Native) -> List(Int) =
+    "argamak_ffi" "to_ints"
 }
 
 if javascript {
-  external fn do_to_list(Native) -> List(a) =
-    "../argamak_ffi.mjs" "to_flat_list"
+  external fn do_to_ints(Native) -> List(Int) =
+    "../argamak_ffi.mjs" "to_ints"
 }
 
-/// Coverts a `Tensor` into its `Native` representation.
+/// Converts a `Tensor` into a flat list of booleans.
+///
+/// Nonzero values become `True`, otherwise `False`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > to_bools(from_float(0.))
+/// [False]
+///
+/// > import argamak/axis.{X, Y}
+/// > import argamak/space
+/// > assert Ok(d2) = space.d2(X(3), Y(1))
+/// > assert Ok(x) = from_ints(of: [1, 0, -3], into: d2)
+/// > to_bools(x)
+/// [True, False, True]
+/// ```
+///
+pub fn to_bools(x: Tensor(a)) -> List(Bool) {
+  x
+  // Cast to "bool" first as truncation may skew results otherwise
+  |> all(with: fn(_) { False })
+  |> to_ints
+  |> list.map(with: int_to_bool)
+}
+
+/// Converts a `Tensor` into its `Native` representation.
 ///
 /// ## Examples
 ///
 /// ```gleam
 /// > external fn erlang_rank(Native) -> Int =
 /// >   "Elixir.Nx" "rank"
-/// > let native = to_native(from_int(3))
-/// > erlang_rank(native)
+/// > to_native(from_int(3)) |> erlang_rank
 /// 0
 /// ```
 ///
-pub fn to_native(tensor: Tensor(a, dn, axis)) -> Native {
-  tensor.data
+pub fn to_native(x: Tensor(a)) -> Native {
+  x.data
 }
 
-/// Results in the given `Tensor` on success, or a `TensorError` on failure.
+pub type ToString {
+  Data
+  Record
+}
+
+/// Returns a string representation of the given `Tensor`, either the whole
+/// `Record` or just its `Data`.
 ///
-/// Ensures the `Tensor` is compatible with its `Space` and computes up to one
-/// inferred dimension size.
-///
-/// Useful within low-level functions in which a `Tensor` is put into a new
-/// `Space`.
-///
-fn fit(tensor: Tensor(a, dn, axis)) -> Result(Tensor(a, dn, axis), TensorError) {
-  let space =
-    tensor
-    |> space
-  let dividend =
-    tensor
-    |> to_list
-    |> list.length
-
-  let initial = FitAcc(divisor: 1, inferring: None)
-  let FitAcc(divisor: divisor, inferring: inferring) =
-    space
-    |> space.elements
-    |> list.fold(
-      from: initial,
-      with: fn(acc, element) {
-        let #(axis, size) = element
-        case size {
-          -1 -> FitAcc(..acc, inferring: Some(axis))
-          _else -> FitAcc(..acc, divisor: acc.divisor * size)
-        }
-      },
-    )
-
-  case dividend % divisor {
-    0 ->
-      case inferring {
-        None -> Ok(tensor)
-        Some(infer) -> {
-          assert Ok(space) =
-            space
-            |> space.map_elements(with: fn(element) {
-              let #(axis, _) = element
-              case axis == infer {
-                True -> #(axis, dividend / divisor)
-                False -> element
-              }
-            })
-          Tensor(..tensor, space: space)
-          |> Ok
-        }
-      }
-    _else -> Error(IncompatibleShape)
-  }
-}
-
-type FitAcc(axis) {
-  FitAcc(divisor: Int, inferring: Option(axis))
-}
-
-fn map_data(
-  over tensor: Tensor(a, dn, axis),
-  with fun: fn(Native) -> Native,
-) -> Tensor(a, dn, axis) {
-  Tensor(
-    ..tensor,
-    data: tensor
-    |> to_native
-    |> fun,
-  )
-}
-
-if erlang {
-  external fn list_to_tuple(List(a)) -> Dynamic =
-    "erlang" "list_to_tuple"
-}
-
-if javascript {
-  external fn list_to_tuple(List(a)) -> Dynamic =
-    "../argamak_ffi.mjs" "list_to_tuple"
-}
-
-/// Prints a `Tensor`'s underlying data to standard out.
-///
-/// Takes a `max_width` (in columns) argument for which the special values `-1`
-/// and `0` represent default and no wrapping, respectively.
-///
-/// If the `meta` argument is `True`, various `Tensor` details will be printed
-/// with the data.
+/// Takes a `column` argument for which the special values `-1` and `0`
+/// represent default and no wrapping, respectively.
 ///
 /// ## Examples
 ///
 /// ```gleam
+/// > import argamak/axis.{X, Y, Z}
 /// > import argamak/space
-/// > type Axis { X Y Z }
-/// > assert Ok(space) = space.d2(#(X, 2), #(Y, 2))
-/// > try tensor = from_ints(of: [1, 2, 3, 4], into: space)
-/// > Ok(print(from: tensor, wrap_at: -1, meta: False))
-/// // [[1, 2],
-/// //  [3, 4]]
-/// Ok(Nil)
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > to_string(from: x, return: Data, wrap_at: 0)
+/// "[[1, 2],
+///  [3, 4]]"
 ///
-/// > assert Ok(space) = space.d3(#(X, 2), #(Y, 1), #(Z, 4))
-/// > let list = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > try tensor = from_ints(of: list, into: space)
-/// > Ok(print(from: tensor, wrap_at: 10, meta: True))
-/// // Tensor
-/// // format: Int64
-/// // space: D3 #(X, 2), #(Y, 1), #(Z, 4)
-/// // data:
-/// // [[[1, 2,
-/// //    3, 4]],
-/// //  [[5, 6,
-/// //    7, 8]]]
-/// Ok(Nil)
+/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
+/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > do_print(from: x, return: Record, wrap_at: 10)
+/// "Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(1), Z(4)),
+///   [[[1, 2,
+///      3, 4]],
+///    [[5, 6,
+///      7, 8]]],
+/// )"
+/// ```
 ///
-pub fn print(
-  from tensor: Tensor(a, dn, axis),
-  wrap_at max_width: Int,
-  meta meta: Bool,
-) -> Nil {
-  let string =
-    tensor
-    |> data_to_string(wrap_at: max_width)
-  let string = case rank(tensor) > 0 {
-    True -> string
-    False ->
-      string
-      |> string.drop_left(up_to: 1)
-      |> string.drop_right(up_to: 1)
+pub fn to_string(
+  from x: Tensor(a),
+  return record_or_data: ToString,
+  wrap_at column: Int,
+) -> String {
+  let column = case column < 0 {
+    True -> columns()
+    False -> column
   }
-
-  case meta {
-    True -> {
+  let tab = case record_or_data {
+    Record -> 2
+    Data -> 0
+  }
+  let data =
+    x
+    |> do_to_string(wrap_at: column, with: tab)
+  case record_or_data {
+    Record -> {
       let format =
-        tensor
+        x
         |> format
         |> format.to_string
       let space =
-        tensor
+        x
         |> space
         |> space.to_string
-      [
-        "Tensor",
-        ["format:", format]
-        |> string.join(with: " "),
-        ["space:", space]
-        |> string.join(with: " "),
-        "data:",
-        "",
-      ]
+      let space = case string.length(space) > column {
+        True if column > 0 ->
+          space
+          |> string.replace(each: "Space(", with: "Space(\n    ")
+          |> string.replace(each: "), ", with: "),\n    ")
+          |> string.replace(each: "))", with: "),\n  )")
+        _else -> space
+      }
+      ["Tensor(", "  " <> format <> ",", "  " <> space <> ",", data <> ",", ")"]
       |> string.join(with: "\n")
     }
-    False -> ""
+    Data -> data
   }
-  |> string.append(suffix: string)
-  |> io.println
-}
-
-/// Returns a `String` representation of a `Tensor`'s data.
-///
-fn data_to_string(
-  from tensor: Tensor(a, dn, axis),
-  wrap_at max_width: Int,
-) -> String {
-  let max_width = case max_width < 0 {
-    True -> 39
-    False -> max_width
-  }
-
-  let is_long = case max_width {
-    0 -> fn(_) { False }
-    _else -> fn(int) { int > max_width }
-  }
-
-  let #(_, string) =
-    tensor
-    |> shape
-    |> list.drop(up_to: 1)
-    |> list.reverse
-    |> list.fold(
-      from: tensor
-      |> to_list
-      |> dynamic.from,
-      with: fn(acc, size) {
-        assert Ok(acc) =
-          acc
-          |> dynamic.shallow_list
-        acc
-        |> list.sized_chunk(into: size)
-        |> dynamic.from
-      },
-    )
-    |> data_to_string_acc(from: DataToStringAcc(depth: 1, is_long: is_long))
-
-  string.concat(["[", string, "]"])
-}
-
-type DataToStringAcc {
-  DataToStringAcc(depth: Int, is_long: fn(Int) -> Bool)
-}
-
-fn data_to_string_acc(
-  from acc: DataToStringAcc,
-  over list: Dynamic,
-) -> #(DataToStringAcc, String) {
-  let ws =
-    " "
-    |> string.repeat(times: acc.depth)
-  let ws_length =
-    ws
-    |> string.length
-
-  assert Ok(string) =
-    list
-    |> dynamic.any(of: [
-      function.compose(
-        dynamic.list(of: dynamic.shallow_list),
-        result.map(_, with: fn(list) {
-          let #(_, strings) =
-            list
-            |> list.map_fold(
-              from: DataToStringAcc(..acc, depth: acc.depth + 1),
-              with: fn(acc, list) {
-                list
-                |> dynamic.from
-                |> data_to_string_acc(from: acc)
-              },
-            )
-          strings
-          |> iterator.from_list
-          |> iterator.map(with: fn(string) { string.concat(["[", string, "]"]) })
-          |> iterator.intersperse(with: string.append(to: ",\n", suffix: ws))
-          |> iterator.to_list
-          |> string.concat
-        }),
-      ),
-      function.compose(
-        dynamic.shallow_list,
-        result.map(_, with: fn(list) {
-          let #(_, string) =
-            list
-            |> iterator.from_list
-            |> iterator.index
-            |> iterator.fold(
-              from: #(0, ""),
-              with: fn(inner_acc, tuple) {
-                let #(index, item) = tuple
-                let #(line_length, string) = inner_acc
-                let item = item_to_string(item)
-                let item_length = string.length(item) + 1
-                case index {
-                  0 -> #(ws_length + item_length, item)
-                  _else -> {
-                    let item_length = item_length
-                    let line_length = line_length + item_length
-                    case acc.is_long(line_length + ws_length) {
-                      True -> #(
-                        ws_length + item_length,
-                        [string, ",\n", ws, item]
-                        |> string.concat,
-                      )
-                      False -> #(
-                        line_length + 1,
-                        [string, ", ", item]
-                        |> string.concat,
-                      )
-                    }
-                  }
-                }
-              },
-            )
-          string
-        }),
-      ),
-    ])
-
-  #(acc, string)
-}
-
-fn item_to_string(item: Dynamic) -> String {
-  assert Ok(string) =
-    item
-    |> dynamic.any(of: [
-      function.compose(
-        dynamic.float,
-        result.map(over: _, with: float.to_string),
-      ),
-      function.compose(dynamic.int, result.map(over: _, with: int.to_string)),
-      dynamic.string,
-    ])
-
-  string
-}
-
-/// Results in the value of the given function on success, or an error on
-/// failure.
-///
-/// Prevents unsafe functions from crashing.
-///
-fn rescue(
-  from fun1: fn() -> a,
-  apply fun2: fn(String) -> error,
-) -> Result(a, error) {
-  do_rescue(fun1, fun2)
 }
 
 if erlang {
-  fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
-    fun1
-    |> erlang.rescue
-    |> result.map_error(
-      with: decode_crash
-      |> function.compose(fun2),
-    )
-  }
-
-  fn decode_crash(crash: Crash) -> String {
-    case crash {
-      erlang.Errored(dynamic) | erlang.Exited(dynamic) | erlang.Thrown(dynamic) ->
-        case is_exception(dynamic) {
-          True ->
-            dynamic
-            |> exception_from_dynamic
-            |> result.map(with: message)
-          False ->
-            dynamic
-            |> dynamic.string
-        }
-        |> result.unwrap(or: "")
-
-      _else -> ""
-    }
-  }
-
-  external type Exception
-
-  fn exception_from_dynamic(from: Dynamic) -> Result(Exception, DecodeErrors) {
-    case is_exception(from) {
-      True ->
-        from
-        |> dynamic.unsafe_coerce
-        |> Ok
-      False ->
-        [
-          DecodeError(
-            expected: "Exception",
-            found: dynamic.classify(from),
-            path: [],
-          ),
-        ]
-        |> Error
-    }
-  }
-
-  external fn message(Exception) -> String =
-    "Elixir.Exception" "message"
-
-  external fn is_exception(a) -> Bool =
-    "Elixir.Exception" "exception?"
+  external fn columns() -> Int =
+    "argamak_ffi" "columns"
 }
 
 if javascript {
-  fn do_rescue(fun1: fn() -> a, fun2: fn(String) -> error) -> Result(a, error) {
-    fun1
-    |> javascript_rescue
-    |> result.map_error(with: fn(error) {
-      error.1
-      |> fun2
-    })
-  }
-
-  external fn javascript_rescue(fn() -> a) -> Result(a, #(String, String)) =
-    "../argamak_ffi.mjs" "rescue"
+  external fn columns() -> Int =
+    "../argamak_ffi.mjs" "columns"
 }
 
-/// Replaces an error message string based on a keyword list of errors.
-///
-/// Crashes if the message isn't found in the list.
-///
-fn replace_error(
-  when message: String,
-  found_in list: List(#(error, String)),
-) -> error {
-  // io.debug(message) // TODO
-  let opts = regex.Options(case_insensitive: True, multi_line: False)
-  assert Ok(error) =
-    list
-    |> list.find_map(with: fn(pair) {
-      let #(error, test) = pair
-      assert Ok(test) =
-        test
-        |> regex.compile(with: opts)
-      case regex.check(with: test, content: message) {
-        True -> Ok(error)
-        False -> Error(Nil)
+type ToStringAcc {
+  ToStringAcc(built: List(StringBuilder), builder: StringBuilder)
+}
+
+// fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String {
+//   let #(xs, item_length) =
+//     x
+//     |> to_native
+//     |> prepare_to_string
+// 
+//   let rank = rank(x)
+// 
+//   let shape = case rank {
+//     0 -> [1]
+//     _else ->
+//       x
+//       |> shape
+//       |> list.reverse
+//   }
+// 
+//   let try_wrap = case column > 0 {
+//     True -> {
+//       let max_length = column - tab - rank * 2
+//       let item_length = item_length + 2
+//       let wrap_at = int.max(max_length / item_length, 1)
+//       let inner_size = case shape {
+//         [inner_size, ..] -> inner_size
+//         _else -> 0
+//       }
+//       fn(j, f) {
+//         case { j + 1 } % wrap_at {
+//           0 if wrap_at < inner_size -> fn() { Ok(f()) }
+//           _else -> fn() { Error(Nil) }
+//         }
+//       }
+//     }
+//     False -> fn(_, _) { fn() { Error(Nil) } }
+//   }
+// 
+//   let ToStringAcc(builder: init_builder, ..) as to_string_acc =
+//     ToStringAcc(built: [], builder: string_builder.new())
+// 
+//   let xs =
+//     xs
+//     |> iterator.from_list
+//     |> iterator.map(with: fn(x) {
+//       x
+//       |> string.pad_left(to: item_length, with: " ")
+//       |> string_builder.from_string
+//     })
+//     |> iterator.index
+// 
+//   let [#(_, xs)] =
+//     shape
+//     |> list.index_fold(
+//       from: xs,
+//       with: fn(acc, size, i) {
+//         let try_build = fn(j, f) {
+//           case { j + 1 } % size {
+//             0 -> Ok(f())
+//             _else -> Error(Nil)
+//           }
+//         }
+// 
+//         let ToStringAcc(built: built, ..) = case i {
+//           0 ->
+//             acc
+//             |> iterator.fold(
+//               from: to_string_acc,
+//               with: fn(acc, item) {
+//                 let #(j, x) = item
+//                 let builder =
+//                   string_builder.append_builder(to: acc.builder, suffix: x)
+//                 j
+//                 |> try_build(fn() {
+//                   case rank {
+//                     0 ->
+//                       ToStringAcc(
+//                         ..acc,
+//                         built: list.append(acc.built, [builder]),
+//                       )
+//                     _else -> {
+//                       let builder =
+//                         builder
+//                         |> string_builder.prepend(prefix: "[")
+//                         |> string_builder.append(suffix: "]")
+//                       ToStringAcc(
+//                         built: list.append(acc.built, [builder]),
+//                         builder: init_builder,
+//                       )
+//                     }
+//                   }
+//                 })
+//                 |> result.lazy_or(try_wrap(
+//                   j,
+//                   fn() {
+//                     let indent = string.repeat(" ", times: tab + rank)
+//                     let builder =
+//                       builder
+//                       |> string_builder.append(suffix: ",\n")
+//                       |> string_builder.append(suffix: indent)
+//                     ToStringAcc(..acc, builder: builder)
+//                   },
+//                 ))
+//                 |> result.lazy_unwrap(or: fn() {
+//                   let builder = string_builder.append(to: builder, suffix: ", ")
+//                   ToStringAcc(..acc, builder: builder)
+//                 })
+//               },
+//             )
+//           _else ->
+//             acc
+//             |> iterator.fold(
+//               from: to_string_acc,
+//               with: fn(acc, item) {
+//                 let #(j, x) = item
+//                 let builder =
+//                   string_builder.append_builder(to: acc.builder, suffix: x)
+//                 j
+//                 |> try_build(fn() {
+//                   let builder =
+//                     builder
+//                     |> string_builder.prepend(prefix: "[")
+//                     |> string_builder.append(suffix: "]")
+//                   ToStringAcc(
+//                     built: list.append(acc.built, [builder]),
+//                     builder: init_builder,
+//                   )
+//                 })
+//                 |> result.lazy_unwrap(or: fn() {
+//                   let indent = string.repeat(" ", times: tab + rank - i)
+//                   let builder =
+//                     builder
+//                     |> string_builder.append(suffix: ",\n")
+//                     |> string_builder.append(suffix: indent)
+//                   ToStringAcc(..acc, builder: builder)
+//                 })
+//               },
+//             )
+//         }
+//         built
+//         |> iterator.from_list
+//         |> iterator.index
+//       },
+//     )
+//     |> iterator.to_list
+//   let indent = string.repeat(" ", times: tab)
+//   xs
+//   |> string_builder.prepend(prefix: indent)
+//   |> string_builder.to_string
+// }
+fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String {
+  let #(xs, item_length) =
+    x
+    |> to_native
+    |> prepare_to_string
+
+  let rank = rank(x)
+
+  let shape = case rank {
+    0 -> [1]
+    _else ->
+      x
+      |> shape
+      |> list.reverse
+  }
+
+  let should_wrap = case column > 0 {
+    True -> {
+      let max_length = column - tab - rank * 2
+      let item_length = item_length + 2
+      let wrap_at = int.max(max_length / item_length, 1)
+      let inner_size = case shape {
+        [inner_size, ..] -> inner_size
+        _else -> 0
       }
+      fn(j) { { j + 1 } % wrap_at == 0 && wrap_at < inner_size }
+    }
+    False -> fn(_) { False }
+  }
+
+  let ToStringAcc(builder: init_builder, ..) as to_string_acc =
+    ToStringAcc(built: [], builder: string_builder.new())
+
+  let xs =
+    iterator.index({
+      use x <- iterator.map(over: iterator.from_list(xs))
+      x
+      |> string.pad_left(to: item_length, with: " ")
+      |> string_builder.from_string
     })
-  error
+
+  let [#(_, xs)] =
+    iterator.to_list({
+      use acc, size, i <- list.index_fold(over: shape, from: xs)
+      let should_build = fn(j) { { j + 1 } % size == 0 }
+      let ToStringAcc(built: built, ..) = case i {
+        0 -> {
+          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
+          let #(j, x) = item
+          let builder =
+            string_builder.append_builder(to: acc.builder, suffix: x)
+          let should_build_j = should_build(j)
+          use <- when(
+              should_build_j && rank == 0,
+              then: fn() {
+                ToStringAcc(..acc, built: list.append(acc.built, [builder]))
+              },
+            )
+          use <- when(
+              should_build_j,
+              then: fn() {
+                let builder =
+                  builder
+                  |> string_builder.prepend(prefix: "[")
+                  |> string_builder.append(suffix: "]")
+                ToStringAcc(
+                  built: list.append(acc.built, [builder]),
+                  builder: init_builder,
+                )
+              },
+            )
+          use <- when(
+              should_wrap(j),
+              then: fn() {
+                let indent = string.repeat(" ", times: tab + rank)
+                let builder =
+                  builder
+                  |> string_builder.append(suffix: ",\n")
+                  |> string_builder.append(suffix: indent)
+                ToStringAcc(..acc, builder: builder)
+              },
+            )
+          // else
+          let builder = string_builder.append(to: builder, suffix: ", ")
+          ToStringAcc(..acc, builder: builder)
+        }
+        _else -> {
+          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
+          let #(j, x) = item
+          let builder =
+            string_builder.append_builder(to: acc.builder, suffix: x)
+          use <- when(
+              should_build(j),
+              then: fn() {
+                let builder =
+                  builder
+                  |> string_builder.prepend(prefix: "[")
+                  |> string_builder.append(suffix: "]")
+                ToStringAcc(
+                  built: list.append(acc.built, [builder]),
+                  builder: init_builder,
+                )
+              },
+            )
+          // else
+          let indent = string.repeat(" ", times: tab + rank - i)
+          let builder =
+            builder
+            |> string_builder.append(suffix: ",\n")
+            |> string_builder.append(suffix: indent)
+          ToStringAcc(..acc, builder: builder)
+        }
+      }
+      built
+      |> iterator.from_list
+      |> iterator.index
+    })
+
+  let indent = string.repeat(" ", times: tab)
+  xs
+  |> string_builder.prepend(prefix: indent)
+  |> string_builder.to_string
+}
+
+if erlang {
+  external fn prepare_to_string(Native) -> #(List(String), Int) =
+    "argamak_ffi" "prepare_to_string"
+}
+
+if javascript {
+  external fn prepare_to_string(Native) -> #(List(String), Int) =
+    "../argamak_ffi.mjs" "prepare_to_string"
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Utility Functions                      //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Prints the data and metadata from a given `Tensor` and returns the `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > debug(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 2],
+///    [3, 4]],
+/// )
+/// x
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
+/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > debug(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(1), Z(4)),
+///   [[[1, 2, 3, 4]],
+///    [[5, 6, 7, 8]]],
+/// )
+/// x
+/// ```
+///
+pub fn debug(x: Tensor(a)) -> Tensor(a) {
+  print(x)
+  x
+}
+
+/// Prints the data and metadata from a given `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(2)),
+///   [[1, 2],
+///    [3, 4]],
+/// )
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
+/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(1), Z(4)),
+///   [[[1, 2, 3, 4]],
+///    [[5, 6, 7, 8]]],
+/// )
+/// Nil
+/// ```
+///
+pub fn print(x: Tensor(a)) -> Nil {
+  x
+  |> to_string(return: Record, wrap_at: -1)
+  |> io.println
+}
+
+/// Prints the data from a given `Tensor`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{X, Y, Z}
+/// > import argamak/space
+/// > assert Ok(d2) = space.d2(X(2), Y(2))
+/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > print_data(x)
+/// [[1, 2],
+///  [3, 4]]
+/// Nil
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
+/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > print_data(x)
+/// [[[1, 2, 3, 4]],
+///  [[5, 6, 7, 8]]]
+/// Nil
+/// ```
+///
+pub fn print_data(x: Tensor(a)) -> Nil {
+  x
+  |> to_string(return: Data, wrap_at: -1)
+  |> io.println
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Private Functions                      //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+/// Results in a `Tensor` put into a given `Space` with a `Format` applied to
+/// the data on success, or a `TensorError` on failure.
+///
+fn tensor(
+  from data: a,
+  into space: Space,
+  with new_format: Format(b),
+) -> TensorResult(b) {
+  try native = do_tensor(data, format.to_native(new_format))
+  try x =
+    native
+    |> Tensor(format: new_format, space: space)
+    |> reshape(into: space)
+  Ok(x)
+}
+
+if erlang {
+  external fn do_tensor(data, format) -> NativeResult =
+    "argamak_ffi" "tensor"
+}
+
+if javascript {
+  external fn do_tensor(data, format) -> NativeResult =
+    "../argamak_ffi.mjs" "tensor"
+}
+
+type FitBy {
+  Definition
+  Inference
+}
+
+type FitAcc(axis) {
+  FitAcc(divisor: Int, fit_by: FitBy)
+}
+
+/// Results in the given `Tensor` on success, or a `TensorError` on failure.
+///
+/// Ensures the `Tensor` is compatible with its `Space` and converts a maximum
+/// of one `Infer` into an `Axis` of known `size`.
+///
+/// Useful in low-level functions where a `Tensor` is put into a new `Space`.
+///
+fn fit(x: Tensor(a)) -> TensorResult(a) {
+  let dividend = size(x)
+  // let FitAcc(divisor: divisor, fit_by: fit_by) =
+  //   x
+  //   |> axes
+  //   |> list.fold(
+  //     from: FitAcc(divisor: 1, fit_by: Definition),
+  //     with: fn(acc, axis) {
+  //       case axis {
+  //         Infer(_) -> FitAcc(..acc, fit_by: Inference)
+  //         _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
+  //       }
+  //     },
+  //   )
+  let FitAcc(divisor: divisor, fit_by: fit_by) = {
+    use
+      acc,
+      axis
+    <- list.fold(over: axes(x), from: FitAcc(divisor: 1, fit_by: Definition))
+    case axis {
+      Infer(_) -> FitAcc(..acc, fit_by: Inference)
+      _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
+    }
+  }
+
+  case dividend % divisor {
+    0 if fit_by == Definition -> Ok(x)
+    0 if fit_by == Inference -> {
+      // assert Ok(space) =
+      //   x
+      //   |> space
+      //   |> space.map(with: fn(axis) {
+      //     case axis {
+      //       Infer(_) -> axis.resize(axis, dividend / divisor)
+      //       _else -> axis
+      //     }
+      //   })
+      assert Ok(space) = {
+        use axis <- space.map(space(x))
+        case axis {
+          Infer(_) -> axis.resize(axis, dividend / divisor)
+          _else -> axis
+        }
+      }
+      Tensor(..x, space: space)
+      |> Ok
+    }
+    _else -> Error(IncompatibleShape)
+  }
+}
+
+fn broadcastable(
+  f: fn(Native, Native) -> NativeResult,
+  a: Tensor(a),
+  b: Tensor(a),
+) -> TensorResult(a) {
+  try space =
+    a
+    |> space
+    |> space.merge(space(b))
+    |> result.map_error(with: SpaceErrors)
+  try native = f(to_native(a), to_native(b))
+  Tensor(..a, data: native, space: space)
+  |> Ok
+}
+
+fn sign_not_equal(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  let zero =
+    0
+    |> from_int
+    |> reformat(apply: format(a))
+  try x = multiply(sign(a), sign(b))
+  less(is: x, than: zero)
+}
+
+fn permit_zero(
+  in x: Tensor(a),
+  with f: fn(Tensor(a)) -> TensorResult(a),
+) -> TensorResult(a) {
+  let zero =
+    0
+    |> from_int
+    |> reformat(apply: format(x))
+  try is_nonzero = not_equal(is: x, to: zero)
+  try is_zero = equal(is: x, to: zero)
+  try x = add(x, is_zero)
+  try x = f(x)
+  multiply(x, is_nonzero)
+}
+
+fn all_nonzero(x: Tensor(a)) -> TensorResult(a) {
+  try all =
+    x
+    |> all(with: fn(_axis) { True })
+    |> reformat(apply: format.int32())
+    |> to_int
+  case all {
+    1 -> Ok(x)
+    _else -> Error(ZeroDivision)
+  }
+}
+
+type Reducible {
+  Away
+  InSitu
+}
+
+type ReducibleAcc {
+  ReducibleAcc(axes: Axes, indices: Indices)
+}
+
+fn reducible_over_axes(
+  f: fn(Native, Indices) -> Native,
+  x: Tensor(a),
+  filter: fn(Axis) -> Bool,
+  reduce: Reducible,
+) -> Tensor(a) {
+  // let acc =
+  //   x
+  //   |> axes
+  //   |> list.index_fold(
+  //     from: ReducibleAcc([], []),
+  //     with: fn(acc, axis, index) {
+  //       case filter(axis) {
+  //         True if reduce == InSitu -> {
+  //           let axis = axis.resize(axis, 1)
+  //           ReducibleAcc(
+  //             axes: [axis, ..acc.axes],
+  //             indices: [index, ..acc.indices],
+  //           )
+  //         }
+  //         True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
+  //         False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+  //       }
+  //     },
+  //   )
+  let acc = {
+    use
+      acc,
+      axis,
+      index
+    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    case filter(axis) {
+      True if reduce == InSitu -> {
+        let axis = axis.resize(axis, 1)
+        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index, ..acc.indices])
+      }
+      True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
+      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+    }
+  }
+  assert Ok(new_space) =
+    acc.axes
+    |> list.reverse
+    |> space.from_list
+  let native = to_native(x)
+  let native = case list.reverse(acc.indices) {
+    [] -> {
+      // Normalize by appending a size-1 axis to reduce over (TensorFlow-like)
+      assert Ok(native) =
+        x
+        |> shape
+        |> list.append([1])
+        |> do_reshape(native, _)
+      f(native, [rank(x)])
+    }
+    indices -> {
+      assert Ok(native) =
+        native
+        |> f(indices)
+        |> do_reshape(space.shape(new_space))
+      native
+    }
+  }
+  Tensor(..x, data: native, space: new_space)
+}
+
+fn reducible_over_axis(
+  f: fn(Native, Int) -> Native,
+  x: Tensor(a),
+  find: fn(Axis) -> Bool,
+  reduce: Reducible,
+) -> Tensor(a) {
+  // let acc =
+  //   x
+  //   |> axes
+  //   |> list.index_fold(
+  //     from: ReducibleAcc([], []),
+  //     with: fn(acc, axis, index) {
+  //       case acc.indices == [] && find(axis) {
+  //         True if reduce == InSitu -> {
+  //           let axis = axis.resize(axis, 1)
+  //           ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
+  //         }
+  //         True -> ReducibleAcc(..acc, indices: [index])
+  //         False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+  //       }
+  //     },
+  //   )
+  let acc = {
+    use
+      acc,
+      axis,
+      index
+    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    case acc.indices == [] && find(axis) {
+      True if reduce == InSitu -> {
+        let axis = axis.resize(axis, 1)
+        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
+      }
+      True -> ReducibleAcc(..acc, indices: [index])
+      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+    }
+  }
+  assert Ok(new_space) =
+    acc.axes
+    |> list.reverse
+    |> space.from_list
+  case acc.indices {
+    [] -> {
+      // Normalize by flattening the tensor if no index is found (Nx-like)
+      assert Ok(new_space) =
+        "Nil"
+        |> Infer
+        |> space.d1
+      assert Ok(x) = reshape(put: x, into: new_space)
+      Tensor(..x, data: f(to_native(x), 0), space: space.new())
+    }
+    [index, ..] -> {
+      assert Ok(native) =
+        x
+        |> to_native
+        |> f(index)
+        |> do_reshape(space.shape(new_space))
+      Tensor(..x, data: native, space: new_space)
+    }
+  }
+}
+
+fn int_to_bool(x) {
+  case x {
+    0 -> False
+    _else -> True
+  }
+}
+
+fn when(condition: Bool, then f: fn() -> a, else g: fn() -> a) -> a {
+  case condition {
+    True -> f()
+    False -> g()
+  }
 }

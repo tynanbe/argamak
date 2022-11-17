@@ -1,5 +1,5 @@
 name = "argamak"
-version = "0.2.0"
+version = "0.3.0-dev"
 description = "A tensor library for the Gleam programming language"
 licences = ["Apache-2.0"]
 
@@ -13,7 +13,6 @@ href = "https://gleam.run/"
 title = "Website"
 
 [dependencies]
-gleam_erlang = "~> 0.15"
 gleam_stdlib = "~> 0.23"
 nx = "~> 0.3"
 
@@ -23,6 +22,19 @@ rad = "~> 0.1"
 
 [rad]
 targets = ["erlang", "javascript"]
+
+[[rad.formatters]]
+name = "elixir"
+check = [
+  "sh",
+  "-c",
+  "mix format --check-formatted && echo -n 'Checked all files in `src` and `test`'",
+]
+run = [
+  "sh",
+  "-c",
+  "mix format && echo -n 'Formatted all files in `src` and `test`'",
+]
 
 [[rad.formatters]]
 name = "javascript"

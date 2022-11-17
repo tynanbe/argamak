@@ -16,8 +16,8 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "25.1"
-          elixir-version: "1.14.0"
-          gleam-version: "0.23.0"
+          elixir-version: "1.14.2"
+          gleam-version: nightly
 
       - uses: actions/setup-node@v3
         with:
@@ -27,7 +27,7 @@ jobs:
         with:
           owner: rome
           repo: tools
-          version: cli/v0.8.0-next
+          version: cli/v0.10.1-next
           asset-pattern: linux-x64
           install-path: /usr/local/bin/rome
           verbose: true

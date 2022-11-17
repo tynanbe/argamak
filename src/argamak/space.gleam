@@ -1,20 +1,24 @@
-import argamak/util
+import argamak/axis.{Axes, Axis, Infer}
 import gleam/int
 import gleam/list
-import gleam/pair
+import gleam/map
 import gleam/result
 import gleam/string
 
-/// An n-dimensional `Space` with axis–shape tuple elements, one per dimension.
+/// An n-dimensional `Space` containing `Axes` of various sizes.
 ///
-pub opaque type Space(dn, axis) {
-  Space(degree: dn, elements: List(#(axis, Int)))
+pub opaque type Space {
+  Space(axes: Axes)
 }
 
 /// An error returned when attempting to create an invalid `Space`.
 ///
 pub type SpaceError {
-  SpaceError(error: String, element: String)
+  CannotMerge
+  CannotInfer
+  DuplicateName
+  InvalidSize
+  SpaceError(reason: SpaceError, axes: Axes)
 }
 
 /// A `SpaceError` list.
@@ -22,61 +26,26 @@ pub type SpaceError {
 pub type SpaceErrors =
   List(SpaceError)
 
-/// A type without dimensions.
+/// A `Result` alias type for spaces.
 ///
-pub type D0 {
-  D0
-}
+pub type SpaceResult =
+  Result(Space, SpaceErrors)
 
-/// A type with one dimension.
-///
-pub type D1 {
-  D1
-}
-
-/// A type with two dimensions.
-///
-pub type D2 {
-  D2
-}
-
-/// A type with three dimensions.
-///
-pub type D3 {
-  D3
-}
-
-/// A type with four dimensions.
-///
-pub type D4 {
-  D4
-}
-
-/// A type with five dimensions.
-///
-pub type D5 {
-  D5
-}
-
-/// A type with six dimensions.
-///
-pub type D6 {
-  D6
-}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Creation Functions                     //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Results in a dimensionless `Space`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(space) = d0()
-/// > elements(space)
+/// > new() |> elements
 /// []
 /// ```
 ///
-pub fn d0() -> Result(Space(D0, axis), SpaceErrors) {
-  Space(degree: D0, elements: [])
-  |> Ok
+pub fn new() -> Space {
+  Space(axes: [])
 }
 
 /// Results in a 1-dimensional `Space` on success, or `SpaceErrors` on failure.
@@ -84,14 +53,15 @@ pub fn d0() -> Result(Space(D0, axis), SpaceErrors) {
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A }
-/// > assert Ok(space) = d1(#(A, -1))
-/// > elements(space)
-/// [#(A, -1)]
+/// > import argamak/axis.{Infer}
+/// > assert Ok(space) = d1(Infer("A"))
+/// > axes(space)
+/// [Infer("A")]
 /// ```
 ///
-pub fn d1(a: #(axis, Int)) -> Result(Space(D1, axis), SpaceErrors) {
-  Space(degree: D1, elements: [a])
+pub fn d1(a: Axis) -> SpaceResult {
+  [a]
+  |> Space
   |> validate
 }
 
@@ -100,17 +70,15 @@ pub fn d1(a: #(axis, Int)) -> Result(Space(D1, axis), SpaceErrors) {
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B }
-/// > assert Ok(space) = d2(#(A, 2), #(B, 2))
-/// > elements(space)
-/// [#(A, 2), #(B, 2)]
+/// > import argamak/axis.{A, B}
+/// > assert Ok(space) = d2(A(2), B(2))
+/// > axes(space)
+/// [A(2), B(2)]
 /// ```
 ///
-pub fn d2(
-  a: #(axis, Int),
-  b: #(axis, Int),
-) -> Result(Space(D2, axis), SpaceErrors) {
-  Space(degree: D2, elements: [a, b])
+pub fn d2(a: Axis, b: Axis) -> SpaceResult {
+  [a, b]
+  |> Space
   |> validate
 }
 
@@ -119,18 +87,15 @@ pub fn d2(
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B C }
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
-/// > elements(space)
-/// [#(A, 2), #(B, 2), #(C, -1)]
+/// > import argamak/axis.{A, B, Infer}
+/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > axes(space)
+/// [A(2), B(2), Infer("C")]
 /// ```
 ///
-pub fn d3(
-  a: #(axis, Int),
-  b: #(axis, Int),
-  c: #(axis, Int),
-) -> Result(Space(D3, axis), SpaceErrors) {
-  Space(degree: D3, elements: [a, b, c])
+pub fn d3(a: Axis, b: Axis, c: Axis) -> SpaceResult {
+  [a, b, c]
+  |> Space
   |> validate
 }
 
@@ -139,19 +104,15 @@ pub fn d3(
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B C D }
-/// > assert Ok(space) = d4(#(A, 2), #(B, 2), #(C, -1), #(D, 1))
-/// > elements(space)
-/// [#(A, 2), #(B, 2), #(C, -1), #(D, 1)]
+/// > import argamak/axis.{A, B, D, Infer}
+/// > assert Ok(space) = d4(A(2), B(2), Infer("C"), D(1))
+/// > axes(space)
+/// [A(2), B(2), Infer("C"), D(1)]
 /// ```
 ///
-pub fn d4(
-  a: #(axis, Int),
-  b: #(axis, Int),
-  c: #(axis, Int),
-  d: #(axis, Int),
-) -> Result(Space(D4, axis), SpaceErrors) {
-  Space(degree: D4, elements: [a, b, c, d])
+pub fn d4(a: Axis, b: Axis, c: Axis, d: Axis) -> SpaceResult {
+  [a, b, c, d]
+  |> Space
   |> validate
 }
 
@@ -160,20 +121,15 @@ pub fn d4(
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B C D E }
-/// > assert Ok(space) = d5(#(A, 5), #(B, 4), #(C, 3), #(D, 2), #(E, 1))
-/// > elements(space)
-/// [#(A, 5), #(B, 4), #(C, 3), #(D, 2), #(E, 1)]
+/// > import argamak/axis.{A, B, C, D, E}
+/// > assert Ok(space) = d5(A(5), B(4), C(3), D(2), E(1))
+/// > axes(space)
+/// [A(5), B(4), C(3), D(2), E(1)]
 /// ```
 ///
-pub fn d5(
-  a: #(axis, Int),
-  b: #(axis, Int),
-  c: #(axis, Int),
-  d: #(axis, Int),
-  e: #(axis, Int),
-) -> Result(Space(D5, axis), SpaceErrors) {
-  Space(degree: D5, elements: [a, b, c, d, e])
+pub fn d5(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis) -> SpaceResult {
+  [a, b, c, d, e]
+  |> Space
   |> validate
 }
 
@@ -182,48 +138,59 @@ pub fn d5(
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B C D E F }
-/// > assert Ok(space) =
-/// >   d6(#(A, 9), #(B, 9), #(C, 9), #(D, 9), #(E, 9), #(F, 9))
-/// > elements(space)
-/// [#(A, 9), #(B, 9), #(C, 9), #(D, 9), #(E, 9), #(F, 9)]
+/// > import argamak/axis.{A, B, C, D, E, F}
+/// > assert Ok(space) = d6(A(9), B(9), C(9), D(9), E(9), F(9))
+/// > axes(space)
+/// [A(9), B(9), C(9), D(9), E(9), F(9)]
 /// ```
 ///
-pub fn d6(
-  a: #(axis, Int),
-  b: #(axis, Int),
-  c: #(axis, Int),
-  d: #(axis, Int),
-  e: #(axis, Int),
-  f: #(axis, Int),
-) -> Result(Space(D6, axis), SpaceErrors) {
-  Space(degree: D6, elements: [a, b, c, d, e, f])
+pub fn d6(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis, f: Axis) -> SpaceResult {
+  [a, b, c, d, e, f]
+  |> Space
   |> validate
 }
+
+/// Results in a `Space` on success, or `SpaceErrors` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{A, B, C, D, E, F, Z}
+/// > assert Ok(space) = from_list([A(9), B(9), C(9), D(9), E(9), F(9), Z(9)])
+/// > axes(space)
+/// [A(9), B(9), C(9), D(9), E(9), F(9), Z(9)]
+/// ```
+///
+pub fn from_list(x: Axes) -> SpaceResult {
+  x
+  |> Space
+  |> validate
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Reflection Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Returns the axes of a given `Space`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(space) = d0()
-/// > axes(space)
+/// > new() |> axes
 /// []
 ///
-/// > type Axis { A B C }
-/// > assert Ok(space) = d1(#(A, -1))
+/// > import argamak/axis.{A, B, Infer}
+/// > assert Ok(space) = d1(Infer("A"))
 /// > axes(space)
-/// [A]
+/// [Infer("A")]
 ///
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
+/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > axes(space)
-/// [A, B, C]
+/// [A(2), B(2), Infer("C")]
 /// ```
 ///
-pub fn axes(of space: Space(dn, axis)) -> List(axis) {
-  space
-  |> elements
-  |> list.map(with: pair.first)
+pub fn axes(x: Space) -> Axes {
+  x.axes
 }
 
 /// Returns the degree of a given `Space`.
@@ -231,45 +198,23 @@ pub fn axes(of space: Space(dn, axis)) -> List(axis) {
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(space) = d0()
-/// > degree(space)
-/// D0
+/// > new() |> degree
+/// 0
 ///
-/// > type Axis { A B C }
-/// > assert Ok(space) = d1(#(A, -1))
+/// > import argamak/axis.{A, B, Infer}
+/// > assert Ok(space) = d1(Infer("A"))
 /// > degree(space)
-/// D1
+/// 1
 ///
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
+/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > degree(space)
-/// D3
+/// 3
 /// ```
 ///
-pub fn degree(of space: Space(dn, axis)) -> dn {
-  space.degree
-}
-
-/// Returns the elements of a given `Space`.
-///
-/// ## Examples
-///
-/// ```gleam
-/// > assert Ok(space) = d0()
-/// > elements(space)
-/// []
-///
-/// > type Axis { A B C }
-/// > assert Ok(space) = d1(#(A, -1))
-/// > elements(space)
-/// [#(A, -1)]
-///
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
-/// > elements(space)
-/// [#(A, 2), #(B, 2), #(C, -1)]
-/// ```
-///
-pub fn elements(of space: Space(dn, axis)) -> List(#(axis, Int)) {
-  space.elements
+pub fn degree(x: Space) -> Int {
+  x
+  |> axes
+  |> list.length
 }
 
 /// Returns the shape of a given `Space`.
@@ -277,119 +222,198 @@ pub fn elements(of space: Space(dn, axis)) -> List(#(axis, Int)) {
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(space) = d0()
-/// > shape(space)
+/// > new() |> shape
 /// []
 ///
-/// > type Axis { A B C }
-/// > assert Ok(space) = d1(#(A, -1))
+/// > import argamak/axis.{A, B, Infer}
+/// > assert Ok(space) = d1(Infer("A"))
 /// > shape(space)
-/// [-1]
+/// [0]
 ///
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
+/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > shape(space)
-/// [2, 2, -1]
+/// [2, 2, 0]
 /// ```
 ///
-pub fn shape(of space: Space(dn, axis)) -> List(Int) {
-  space
-  |> elements
-  |> list.map(with: pair.second)
+pub fn shape(x: Space) -> List(Int) {
+  x
+  |> axes
+  |> list.map(with: axis.size)
 }
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Transformation Functions               //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Results in a new `Space` with the same number of dimensions as the given
 /// `Space` on success, or `SpaceErrors` on failure.
 ///
-/// Applies the given function to each element of the `Space`.
+/// Applies the given function to each `Axis` of the `Space`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { A B C }
-/// > assert Ok(space) = d0()
-/// > assert Ok(space) = map_elements(of: space, with: fn(_) { #(C, 3) })
-/// > elements(space)
+/// > import argamak/axis.{B, C, Infer}
+/// > assert Ok(space) = map(new(), with: fn(_) { C(3) })
+/// > axes(space)
 /// []
 ///
-/// > assert Ok(space) = d1(#(A, -1))
-/// > assert Ok(space) = map_elements(of: space, with: fn(_) { #(C, 3) })
-/// > elements(space)
-/// [#(C, 3)]
+/// > assert Ok(space) = d1(Infer("A"))
+/// > assert Ok(space) = map(space, with: fn(_) { C(3) })
+/// > axes(space)
+/// [C(3)]
 ///
-/// > assert Ok(space) = d3(#(A, -1), #(B, 2), #(C, 2))
-/// > assert Ok(space) = map_elements(of: space, with: fn(element) {
-/// >   let #(axis, size) = element
-/// >   case size == -1 {
-/// >     True -> #(axis, 4)
-/// >     False -> element
+/// > assert Ok(space) = d3(Infer("A"), B(2), C(2))
+/// > assert Ok(space) = map(space, with: fn(axis) {
+/// >   case axis {
+/// >     Infer(_) -> axis.resize(axis, 4)
+/// >     _else -> axis
 /// >   }
 /// > })
-/// > elements(space)
-/// [#(A, 4), #(B, 2), #(C, 2)]
+/// > axes(space)
+/// [A(4), B(2), C(2)]
 /// ```
 ///
-pub fn map_elements(
-  of space: Space(dn, a),
-  with fun: fn(#(a, Int)) -> #(b, Int),
-) -> Result(Space(dn, b), SpaceErrors) {
-  Space(
-    degree: degree(space),
-    elements: space
-    |> elements
-    |> list.map(with: fun),
-  )
+pub fn map(x: Space, with fun: fn(Axis) -> Axis) -> SpaceResult {
+  x
+  |> axes
+  |> list.map(with: fun)
+  |> Space
   |> validate
 }
+
+/// Results in a new `Space` that is the element-wise maximum of the given
+/// spaces on success, or `SpaceErrors` on failure.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Axis, Infer, X, Y}
+/// > assert Ok(a) = d1(Infer("X"))
+/// > merge(a, new()) |> result.map(with: axes)
+/// Ok([Infer("X")])
+///
+/// > assert Ok(b) = d2(Axis("Sparkle", 2), X(2))
+/// > merge(a, b) |> result.map(with: axes)
+/// Ok([Axis("Sparkle", 2), Infer("X")])
+///
+/// > assert Ok(c) = d3(Infer("X"), Axis("Sparkle", 3), Y(3))
+/// > merge(b, c)
+/// Error([SpaceError(CannotMerge, [Y(3), X(2)])])
+/// ```
+///
+pub fn merge(a: Space, b: Space) -> SpaceResult {
+  let index = fn(x: Space) {
+    x
+    |> axes
+    |> list.index_map(with: fn(index, axis) { #(index, axis) })
+    |> map.from_list
+  }
+  let a_index = index(a)
+  let b_index = index(b)
+
+  let a_size = map.size(a_index)
+  let b_size = map.size(b_index)
+
+  let #(x, map) = case a_size < b_size {
+    True -> #(axes(b), a_index)
+    False -> #(axes(a), b_index)
+  }
+  let offset = int.absolute_value(a_size - b_size)
+
+  let #(x, errors) =
+    x
+    |> list.index_map(with: fn(index, a_axis) {
+      let b_axis =
+        map
+        |> map.get(index - offset)
+        |> result.unwrap(or: a_axis)
+      let a_name = axis.name(a_axis)
+      let b_name = axis.name(b_axis)
+      let a_size = axis.size(a_axis)
+      let b_size = axis.size(b_axis)
+      let should_infer = a_axis == Infer(a_name) || b_axis == Infer(b_name)
+      case a_name == b_name {
+        True if should_infer ->
+          a_name
+          |> Infer
+          |> Ok
+        True ->
+          a_axis
+          |> axis.resize(int.max(a_size, b_size))
+          |> Ok
+        False ->
+          CannotMerge
+          |> SpaceError(axes: [a_axis, b_axis])
+          |> Error
+      }
+    })
+    |> list.partition(with: result.is_ok)
+
+  try x = case errors {
+    [] ->
+      x
+      |> result.all
+      |> result.map_error(with: fn(error) { [error] })
+    _else ->
+      errors
+      |> list.map(with: fn(x) {
+        assert Error(x) = x
+        x
+      })
+      |> Error
+  }
+
+  x
+  |> Space
+  |> validate
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Conversion Functions                   //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Converts a `Space` into a `String`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(space) = d0()
-/// > to_string(space)
-/// "D0"
+/// > new() |> to_string
+/// "Space()"
 ///
-/// > type Axis { A B C }
-/// > assert Ok(space) = d1(#(A, -1))
+/// > import argamak/axis.{A, B, Axis, Infer}
+/// > assert Ok(space) = d1(Axis("Sparkle", 2))
 /// > to_string(space)
-/// "D1 #(A, -1)"
+/// "Space(Axis(\"Sparkle\", 2))"
 ///
-/// > assert Ok(space) = d3(#(A, 2), #(B, 2), #(C, -1))
+/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > to_string(space)
-/// "D3 #(A, 2), #(B, 2), #(C, -1)"
+/// "Space(A(2), B(2), Infer(\"C\"))"
 /// ```
 ///
-pub fn to_string(space: Space(dn, axis)) -> String {
-  let elements =
-    space
-    |> elements
-    |> list.map(with: element_to_string)
+pub fn to_string(x: Space) -> String {
+  let axes =
+    x
+    |> axes
+    |> list.map(with: fn(x) {
+      let name = axis.name(x)
+      let size =
+        x
+        |> axis.size
+        |> int.to_string
+      case x {
+        Axis(..) -> "Axis(\"" <> name <> "\", " <> size <> ")"
+        Infer(_) -> "Infer(\"" <> name <> "\")"
+        _else -> name <> "(" <> size <> ")"
+      }
+    })
     |> string.join(with: ", ")
-  let elements = case elements != "" {
-    True -> string.append(to: " ", suffix: elements)
-    False -> elements
-  }
-
-  assert Ok(degree) =
-    space
-    |> degree
-    |> util.record_to_string
-
-  string.append(to: degree, suffix: elements)
+  "Space(" <> axes <> ")"
 }
 
-fn element_to_string(element: #(axis, Int)) -> String {
-  assert Ok(axis) =
-    element
-    |> pair.first
-    |> util.record_to_string
-  let size =
-    element
-    |> pair.second
-    |> int.to_string
-  string.concat(["#(", axis, ", ", size, ")"])
-}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Private Functions                      //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 /// Results in the given `Space` on success, or `SpaceErrors` on failure.
 ///
@@ -400,81 +424,62 @@ fn element_to_string(element: #(axis, Int)) -> String {
 /// ## Examples
 ///
 /// ```gleam
-/// > type Axis { X Y Z }
-/// > validate(d3(#(X, 1), #(Y, -1), #(Z, 1)))
+/// > import argamak/axis.{Infer, X, Y, Z}
+/// > validate(d3(X(1), Infer("Y"), Z(1)))
 /// Ok(space)
 ///
-/// > validate(d2(#(X, 1), #(X, -1)))
-/// Error([
-///   SpaceError(
-///     error: "multiple axis records from same constructor",
-///     element: "#(X, -1)"),
-/// ])
+/// > validate(d2(X(1), Infer("X")))
+/// Error([SpaceError(DuplicateName, [Infer("X")])])
 ///
-/// > validate(d2(#(X, -1), #(Y, -1)))
-/// Error([
-///   SpaceError(
-///     error: "multiple inferred dimension sizes",
-///     element: "#(Y, -1)"),
-/// ])
+/// > validate(d2(Infer("X"), Infer("Y")))
+/// Error([SpaceError(CannotInfer, [Infer("Y")])])
 ///
-/// > validate(d2(#(X, 0), #(Y, 1)))
-/// Error([SpaceError(error: "dimension size < 1", element: "#(X, 0)")])
+/// > validate(d2(X(0), Y(1)))
+/// Error([SpaceError(InvalidSize, [X(0)])])
 ///
-/// > validate(d3(#(X, -2), #(X, -1), #(Z, -1)))
+/// > validate(d3(X(-2), Infer("X"), Infer("Z")))
 /// Error([
-///   SpaceError(error: "dimension size < 1", element: "#(X, -2)"),
-///   SpaceError(
-///     error: "multiple axis records from same constructor",
-///     element: "#(X, -1)",
-///   ),
-///   SpaceError(
-///     error: "multiple inferred dimension sizes",
-///     element: "#(Z, -1)",
-///   ),
+///   SpaceError(InvalidSize, [X(-2)]),
+///   SpaceError(DuplicateName, [Infer("X")]),
+///   SpaceError(CannotInfer, [Infer("Z")]),
 /// ])
 /// ```
 ///
-fn validate(space: Space(dn, axis)) -> Result(Space(dn, axis), SpaceErrors) {
-  let initial = ValidateAcc(axes: [], inferred: False, results: [])
+fn validate(space: Space) -> SpaceResult {
   let ValidateAcc(_, _, results: results) =
     space
-    |> elements
+    |> axes
     |> list.fold(
-      from: initial,
-      with: fn(acc: ValidateAcc(axis), element) {
-        let #(axis, size) = element
+      from: ValidateAcc(names: [], inferred: False, results: []),
+      with: fn(acc: ValidateAcc, axis) {
+        let name = axis.name(axis)
+        let size = axis.size(axis)
         let errors =
           [
             Invalid(
-              message: "multiple axis records from same constructor",
-              when: list.contains(acc.axes, any: axis),
+              error: DuplicateName,
+              when: list.contains(acc.names, any: name),
             ),
             Invalid(
-              message: "multiple inferred dimension sizes",
-              when: acc.inferred && size == -1,
+              error: CannotInfer,
+              when: acc.inferred && axis == Infer(name),
             ),
-            Invalid(message: "dimension size < 1", when: size < 1 && size != -1),
+            Invalid(error: InvalidSize, when: size < 1 && axis != Infer(name)),
           ]
           |> list.map(with: fn(invalid: Invalid) {
             case invalid.when {
               False -> []
-              True -> [
-                SpaceError(
-                  error: invalid.message,
-                  element: element_to_string(element),
-                ),
-              ]
+              True -> [SpaceError(reason: invalid.error, axes: [axis])]
             }
           })
           |> list.flatten
         let result = case errors {
-          [] -> Ok(element)
+          [] -> Ok(axis)
           _else -> Error(errors)
         }
         ValidateAcc(
-          axes: [axis, ..acc.axes],
-          inferred: acc.inferred || size == -1,
+          names: [name, ..acc.names],
+          inferred: acc.inferred || axis == Infer(name),
           results: [result, ..acc.results],
         )
       },
@@ -496,14 +501,14 @@ fn validate(space: Space(dn, axis)) -> Result(Space(dn, axis), SpaceErrors) {
   }
 }
 
-type ValidateAcc(axis) {
+type ValidateAcc {
   ValidateAcc(
-    axes: List(axis),
+    names: List(String),
     inferred: Bool,
-    results: List(Result(#(axis, Int), SpaceErrors)),
+    results: List(Result(Axis, SpaceErrors)),
   )
 }
 
 type Invalid {
-  Invalid(message: String, when: Bool)
+  Invalid(error: SpaceError, when: Bool)
 }
