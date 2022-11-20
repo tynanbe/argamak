@@ -180,7 +180,11 @@ defmodule :argamak_ffi do
                 String.trim_trailing(x, "0")
               end
 
-            if is_int, do: String.trim_trailing(x, "."), else: x
+            if is_int do
+              String.trim_trailing(x, ".")
+            else
+              String.replace_trailing(x, ".", ".0")
+            end
         end
 
       {[x | xs], Kernel.max(String.length(x), item_width)}

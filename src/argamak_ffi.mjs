@@ -306,7 +306,11 @@ export function prepare_to_string(x) {
       ([xs, item_width], x) => {
         x = Number(x).toFixed(3);
         x = x.includes("e") ? x : trim_trailing(x, "0");
-        x = is_int ? trim_trailing(x, ".") : x;
+        if (is_int) {
+          x = trim_trailing(x, ".");
+        } else {
+          x = x.substr(-1) === "." ? `${x}0` : x;
+        }
         return [[...xs, x], Math.max(x.length, item_width)];
       },
       [[], 0],

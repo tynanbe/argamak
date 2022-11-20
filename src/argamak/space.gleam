@@ -40,7 +40,7 @@ pub type SpaceResult =
 /// ## Examples
 ///
 /// ```gleam
-/// > new() |> elements
+/// > new() |> axes
 /// []
 /// ```
 ///
@@ -48,7 +48,8 @@ pub fn new() -> Space {
   Space(axes: [])
 }
 
-/// Results in a 1-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a one-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -65,7 +66,8 @@ pub fn d1(a: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a 2-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a two-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -82,7 +84,8 @@ pub fn d2(a: Axis, b: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a 3-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a three-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -99,7 +102,8 @@ pub fn d3(a: Axis, b: Axis, c: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a 4-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a four-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -116,7 +120,8 @@ pub fn d4(a: Axis, b: Axis, c: Axis, d: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a 5-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a five-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -133,7 +138,8 @@ pub fn d5(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a 6-dimensional `Space` on success, or `SpaceErrors` on failure.
+/// Results in a six-dimensional `Space` on success, or `SpaceErrors` on
+/// failure.
 ///
 /// ## Examples
 ///
@@ -150,7 +156,8 @@ pub fn d6(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis, f: Axis) -> SpaceResult {
   |> validate
 }
 
-/// Results in a `Space` on success, or `SpaceErrors` on failure.
+/// Results in a `Space` created from a list of `Axes` on success, or
+/// `SpaceErrors` on failure.
 ///
 /// ## Examples
 ///
@@ -284,6 +291,8 @@ pub fn map(x: Space, with fun: fn(Axis) -> Axis) -> SpaceResult {
 
 /// Results in a new `Space` that is the element-wise maximum of the given
 /// spaces on success, or `SpaceErrors` on failure.
+///
+/// Spaces are merged tail-first, and corresponding `Axis` names must match.
 ///
 /// ## Examples
 ///

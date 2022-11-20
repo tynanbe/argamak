@@ -2,32 +2,34 @@ import gleam/string
 
 /// Numerical formats for tensors.
 ///
-/// Each `Format` uses a set number of bits to to represent every `Float`-like
-/// or `Int`-like value.
+/// Each `Format` uses a set number of bits to represent every `Float`-like or
+/// `Int`-like value.
 ///
 pub opaque type Format(a) {
   Format(a)
 }
 
-/// A 32-bit floating point type.
+/// A 32-bit floating point type, argamak's standard for working with floats.
 ///
 pub type Float32 {
   Float32
 }
 
-/// Creates a 32-bit floating point `Format`.
+/// Creates a 32-bit floating point `Format`, argamak's standard for working
+/// with floats.
 ///
 pub fn float32() -> Format(Float32) {
   Format(Float32)
 }
 
-/// A 32-bit signed integer type.
+/// A 32-bit signed integer type, argamak's standard for working with ints.
 ///
 pub type Int32 {
   Int32
 }
 
-/// Creates a 32-bit signed integer `Format`.
+/// Creates a 32-bit signed integer `Format`, argamak's standard for working
+/// with ints.
 ///
 pub fn int32() -> Format(Int32) {
   Format(Int32)

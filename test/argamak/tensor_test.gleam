@@ -14,11 +14,11 @@ import gleeunit/should
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 pub fn from_float_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 }
 
 pub fn from_int_test() {
@@ -227,7 +227,7 @@ if javascript {
 pub fn format_test() {
   assert Ok(d1) = space.d1(Infer("A"))
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.format
   |> should.equal(format.float32())
@@ -237,7 +237,7 @@ pub fn format_test() {
   |> tensor.format
   |> should.equal(format.int32())
 
-  assert Ok(x) = tensor.from_floats([0.], into: d1)
+  assert Ok(x) = tensor.from_floats([0.0], into: d1)
   x
   |> tensor.format
   |> should.equal(format.float32())
@@ -251,7 +251,7 @@ pub fn format_test() {
 pub fn space_test() {
   let xs = [1, 2, 3, 4, 5, 6, 7, 8]
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.space
   |> should.equal(space.new())
@@ -271,7 +271,7 @@ pub fn space_test() {
 }
 
 pub fn axes_test() {
-  let xs = [0.]
+  let xs = [0.0]
 
   assert Ok(d1) = space.d1(Infer("A"))
   assert Ok(d2) = space.d2(A(1), B(1))
@@ -281,7 +281,7 @@ pub fn axes_test() {
   assert Ok(d6) = space.d6(A(1), B(1), C(1), D(1), E(1), F(1))
   assert Ok(d7) = space.from_list([A(1), B(1), C(1), D(1), E(1), F(1), Z(1)])
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.axes
   |> should.equal([])
@@ -323,7 +323,7 @@ pub fn axes_test() {
 }
 
 pub fn rank_test() {
-  let xs = [0.]
+  let xs = [0.0]
 
   assert Ok(d1) = space.d1(Infer("A"))
   assert Ok(d2) = space.d2(A(1), B(1))
@@ -333,7 +333,7 @@ pub fn rank_test() {
   assert Ok(d6) = space.d6(A(1), B(1), C(1), D(1), E(1), F(1))
   assert Ok(d7) = space.from_list([A(1), B(1), C(1), D(1), E(1), F(1), Z(1)])
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.rank
   |> should.equal(0)
@@ -387,22 +387,23 @@ pub fn shape_test() {
   assert Ok(d6) = space.d6(A(1), B(2), C(3), D(4), E(5), F(6))
   assert Ok(d7) = space.from_list([A(1), B(2), C(3), D(4), E(5), F(6), Z(1)])
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.shape
   |> should.equal([])
 
-  assert Ok(x) = tensor.from_floats(of: [1.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [1.0], into: d1)
   x
   |> tensor.shape
   |> should.equal([1])
 
-  assert Ok(x) = tensor.from_floats(of: [1., 2.], into: d2)
+  assert Ok(x) = tensor.from_floats(of: [1.0, 2.0], into: d2)
   x
   |> tensor.shape
   |> should.equal([1, 2])
 
-  assert Ok(x) = tensor.from_floats(of: [1., 2., 3., 4., 5., 6.], into: d3)
+  assert Ok(x) =
+    tensor.from_floats(of: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], into: d3)
   x
   |> tensor.shape
   |> should.equal([1, 2, 3])
@@ -431,7 +432,7 @@ pub fn shape_test() {
 }
 
 pub fn size_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.size
   |> should.equal(1)
@@ -461,7 +462,7 @@ pub fn reformat_test() {
   |> tensor.format
   |> should.equal(format.float32())
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.reformat(apply: format.int32())
   |> should_share_native_format
@@ -561,7 +562,7 @@ pub fn reshape_test() {
   assert Ok(d6) = space.d6(A(1), B(1), C(1), D(1), Infer("E"), F(1))
 
   assert Ok(x) =
-    0.
+    0.0
     |> tensor.from_float
     |> tensor.reshape(into: d1)
   x
@@ -633,7 +634,7 @@ pub fn squeeze_test() {
   |> tensor.axes
   |> should.equal([])
 
-  3.
+  3.0
   |> tensor.from_float
   |> tensor.squeeze(with: fn(_) { False })
   |> should_share_native_format
@@ -704,19 +705,19 @@ pub fn broadcastable_test() {
   |> tensor.equal(to: c)
   |> should.be_error
 
-  assert Ok(a) = tensor.from_floats(of: [5., 4.], into: d1)
-  assert Ok(x) = tensor.equal(is: a, to: tensor.from_float(4.))
+  assert Ok(a) = tensor.from_floats(of: [5.0, 4.0], into: d1)
+  assert Ok(x) = tensor.equal(is: a, to: tensor.from_float(4.0))
   x
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([0., 1.])
+  |> should.equal([0.0, 1.0])
 
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.equal(is: a, to: b)
   x
   |> tensor.to_floats
-  |> should.equal([0., 1., 1., 0.])
+  |> should.equal([0.0, 1.0, 1.0, 0.0])
 }
 
 pub fn equal_test() {
@@ -730,7 +731,7 @@ pub fn equal_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.equal(is: a, to: b)
   x
   |> should_share_native_format
@@ -749,7 +750,7 @@ pub fn not_equal_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.not_equal(is: a, to: b)
   x
   |> should_share_native_format
@@ -768,7 +769,7 @@ pub fn greater_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.greater(is: a, than: b)
   x
   |> should_share_native_format
@@ -787,7 +788,7 @@ pub fn greater_or_equal_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.greater_or_equal(is: a, to: b)
   x
   |> should_share_native_format
@@ -806,7 +807,7 @@ pub fn less_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.less(is: a, than: b)
   x
   |> should_share_native_format
@@ -825,7 +826,7 @@ pub fn less_or_equal_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [4., 4., 5., 5.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [4.0, 4.0, 5.0, 5.0], into: d2)
   assert Ok(x) = tensor.less_or_equal(is: a, to: b)
   x
   |> should_share_native_format
@@ -844,7 +845,7 @@ pub fn logical_and_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 0.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 0.0], into: d2)
   assert Ok(x) = tensor.logical_and(a, b)
   x
   |> should_share_native_format
@@ -863,7 +864,7 @@ pub fn logical_or_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 0.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 0.0], into: d2)
   assert Ok(x) = tensor.logical_or(a, b)
   x
   |> should_share_native_format
@@ -882,7 +883,7 @@ pub fn logical_xor_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 0.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 0.0], into: d2)
   assert Ok(x) = tensor.logical_xor(a, b)
   x
   |> should_share_native_format
@@ -904,7 +905,7 @@ pub fn logical_not_test() {
   |> tensor.logical_not
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([0.])
+  |> should.equal([0.0])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
   assert Ok(x) = tensor.from_ints([-1, 8, 0], into: d3)
@@ -932,7 +933,7 @@ pub fn add_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 0.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 0.0], into: d2)
   assert Ok(x) = tensor.add(a, b)
   x
   |> should_share_native_format
@@ -951,7 +952,7 @@ pub fn subtract_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 0.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 0.0], into: d2)
   assert Ok(x) = tensor.subtract(from: a, value: b)
   x
   |> should_share_native_format
@@ -970,7 +971,7 @@ pub fn multiply_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 9.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 9.0], into: d2)
   assert Ok(x) = tensor.multiply(a, b)
   x
   |> should_share_native_format
@@ -989,12 +990,12 @@ pub fn divide_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., 9.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, 9.0], into: d2)
   assert Ok(x) = tensor.divide(from: a, by: b)
   x
   |> should_share_native_format
   |> tensor.to_floats
-  |> should_loosely_equal([0., 2.25, 0.2, 1.])
+  |> should_loosely_equal([0.0, 2.25, 0.2, 1.0])
 
   assert Ok(x) =
     [infinity()]
@@ -1033,7 +1034,7 @@ pub fn remainder_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [3., 3., -3., -3.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [3.0, 3.0, -3.0, -3.0], into: d2)
   assert Ok(x) = tensor.remainder(from: a, divided_by: b)
   x
   |> should_share_native_format
@@ -1068,7 +1069,7 @@ pub fn modulo_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [3., 3., -3., -3.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [3.0, 3.0, -3.0, -3.0], into: d2)
   assert Ok(x) = tensor.modulo(from: a, divided_by: b)
   x
   |> should_share_native_format
@@ -1102,12 +1103,12 @@ pub fn power_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 0.4, 0.5, 0.9], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 0.4, 0.5, 0.9], into: d2)
   assert Ok(x) = tensor.power(raise: a, to_the: b)
   x
   |> should_share_native_format
   |> tensor.to_floats
-  |> should_loosely_equal([1., 2.408, 1., 7.225])
+  |> should_loosely_equal([1.0, 2.408, 1.0, 7.225])
 }
 
 pub fn max_test() {
@@ -1121,7 +1122,7 @@ pub fn max_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., -9.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, -9.0], into: d2)
   assert Ok(x) = tensor.max(a, b)
   x
   |> should_share_native_format
@@ -1140,7 +1141,7 @@ pub fn min_test() {
 
   let a = tensor.reformat(a, apply: format.float32())
   assert Ok(d2) = space.d2(Infer("A"), B(2))
-  assert Ok(b) = tensor.from_floats(of: [0., 4., 5., -9.], into: d2)
+  assert Ok(b) = tensor.from_floats(of: [0.0, 4.0, 5.0, -9.0], into: d2)
   assert Ok(x) = tensor.min(a, b)
   x
   |> should_share_native_format
@@ -1220,7 +1221,7 @@ pub fn sign_test() {
   |> tensor.sign
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([-1.])
+  |> should.equal([-1.0])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
   assert Ok(x) = tensor.from_ints([-1, 8, 0], into: d3)
@@ -1247,14 +1248,14 @@ pub fn ceiling_test() {
   |> tensor.ceiling
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([0.])
+  |> should.equal([0.0])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.0], into: d3)
   let x = tensor.ceiling(x)
   x
   |> tensor.to_floats
-  |> should.equal([-1., 8., 0.])
+  |> should.equal([-1.0, 8.0, 0.0])
   x
   |> tensor.axes
   |> should.equal([A(1), B(3), C(1)])
@@ -1274,14 +1275,14 @@ pub fn floor_test() {
   |> tensor.floor
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([-1.])
+  |> should.equal([-1.0])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.0], into: d3)
   let x = tensor.floor(x)
   x
   |> tensor.to_floats
-  |> should.equal([-2., 7., 0.])
+  |> should.equal([-2.0, 7.0, 0.0])
   x
   |> tensor.axes
   |> should.equal([A(1), B(3), C(1)])
@@ -1302,14 +1303,14 @@ pub fn round_test() {
   |> tensor.round
   |> should_share_native_format
   |> tensor.to_floats
-  |> should.equal([-2.])
+  |> should.equal([-2.0])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.0], into: d3)
   let x = tensor.round(x)
   x
   |> tensor.to_floats
-  |> should.equal([-1., 8., 0.])
+  |> should.equal([-1.0, 8.0, 0.0])
   x
   |> tensor.axes
   |> should.equal([A(1), B(3), C(1)])
@@ -1332,11 +1333,11 @@ pub fn exp_test() {
   |> should_loosely_equal([0.223])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([-1.2, 7.8, 0.0], into: d3)
   let x = tensor.exp(x)
   x
   |> tensor.to_floats
-  |> should_loosely_equal([0.301, 2440.603, 1.])
+  |> should_loosely_equal([0.301, 2440.603, 1.0])
   x
   |> tensor.axes
   |> should.equal([A(1), B(3), C(1)])
@@ -1373,11 +1374,11 @@ pub fn square_root_test() {
   |> should_loosely_equal([1.225])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([1.2, 7.8, 0.0], into: d3)
   assert Ok(x) = tensor.square_root(x)
   x
   |> tensor.to_floats
-  |> should_loosely_equal([1.095, 2.793, 0.])
+  |> should_loosely_equal([1.095, 2.793, 0.0])
   x
   |> tensor.axes
   |> should.equal([A(1), B(3), C(1)])
@@ -1424,7 +1425,7 @@ pub fn ln_test() {
   |> should_loosely_equal([0.405])
 
   assert Ok(d3) = space.d3(A(1), Infer("B"), C(1))
-  assert Ok(x) = tensor.from_floats([1.2, 7.8, 0.], into: d3)
+  assert Ok(x) = tensor.from_floats([1.2, 7.8, 0.0], into: d3)
   assert Ok(x) = tensor.ln(x)
   x
   |> tensor.to_floats
@@ -1468,12 +1469,12 @@ pub fn in_situ_test() {
   |> tensor.to_int
   |> should.equal(Ok(0))
 
-  -3.
+  -3.0
   |> tensor.from_float
   |> tensor.in_situ_all(with: fn(_) { False })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(1.))
+  |> should.equal(Ok(1.0))
 
   assert Ok(d1) = space.d1(Infer("A"))
 
@@ -1519,12 +1520,12 @@ pub fn in_situ_test() {
 }
 
 pub fn all_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.all(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1570,12 +1571,12 @@ pub fn all_test() {
 }
 
 pub fn any_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.any(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1621,12 +1622,12 @@ pub fn any_test() {
 }
 
 pub fn arg_max_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.arg_max(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1671,12 +1672,12 @@ pub fn arg_max_test() {
 }
 
 pub fn arg_min_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.arg_min(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1721,12 +1722,12 @@ pub fn arg_min_test() {
 }
 
 pub fn max_over_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.max_over(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1771,12 +1772,12 @@ pub fn max_over_test() {
 }
 
 pub fn min_over_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.min_over(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1821,12 +1822,12 @@ pub fn min_over_test() {
 }
 
 pub fn sum_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.sum(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1871,12 +1872,12 @@ pub fn sum_test() {
 }
 
 pub fn product_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.product(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1921,12 +1922,12 @@ pub fn product_test() {
 }
 
 pub fn mean_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.mean(with: fn(_) { True })
   |> should_share_native_format
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   3
   |> tensor.from_int
@@ -1982,24 +1983,24 @@ pub fn mean_test() {
 // Conversion Functions                   //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-const float32_min = -340_282_346_638_528_859_811_704_183_484_516_925_440.
+const float32_min = -340_282_346_638_528_859_811_704_183_484_516_925_440.0
 
-const float32_max = 340_282_346_638_528_859_811_704_183_484_516_925_440.
+const float32_max = 340_282_346_638_528_859_811_704_183_484_516_925_440.0
 
 const int32_min = -2_147_483_648
 
 const int32_max = 2_147_483_647
 
 pub fn to_float_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   0
   |> tensor.from_int
   |> tensor.to_float
-  |> should.equal(Ok(0.))
+  |> should.equal(Ok(0.0))
 
   let d0 = space.new()
 
@@ -2023,12 +2024,12 @@ pub fn to_float_test() {
 
   assert Ok(d1) = space.d1(Infer("A"))
 
-  assert Ok(x) = tensor.from_floats(of: [0.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0], into: d1)
   x
   |> tensor.to_float
   |> should.equal(Error(tensor.IncompatibleShape))
 
-  assert Ok(x) = tensor.from_floats(of: [0., 1.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0, 1.0], into: d1)
   x
   |> tensor.to_float
   |> should.equal(Error(tensor.IncompatibleShape))
@@ -2045,7 +2046,7 @@ pub fn to_float_test() {
 }
 
 pub fn to_int_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_int
   |> should.equal(Ok(0))
@@ -2077,12 +2078,12 @@ pub fn to_int_test() {
 
   assert Ok(d1) = space.d1(Infer("A"))
 
-  assert Ok(x) = tensor.from_floats(of: [0.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0], into: d1)
   x
   |> tensor.to_int
   |> should.equal(Error(tensor.IncompatibleShape))
 
-  assert Ok(x) = tensor.from_floats(of: [0., 1.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0, 1.0], into: d1)
   x
   |> tensor.to_int
   |> should.equal(Error(tensor.IncompatibleShape))
@@ -2099,7 +2100,7 @@ pub fn to_int_test() {
 }
 
 pub fn to_bool_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_bool
   |> should.equal(Ok(False))
@@ -2131,12 +2132,12 @@ pub fn to_bool_test() {
 
   assert Ok(d1) = space.d1(Infer("A"))
 
-  assert Ok(x) = tensor.from_floats(of: [0.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0], into: d1)
   x
   |> tensor.to_bool
   |> should.equal(Error(tensor.IncompatibleShape))
 
-  assert Ok(x) = tensor.from_floats(of: [0., 1.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0, 1.0], into: d1)
   x
   |> tensor.to_bool
   |> should.equal(Error(tensor.IncompatibleShape))
@@ -2156,12 +2157,12 @@ pub fn to_floats_test() {
   assert Ok(d1) = space.d1(Infer("A"))
   assert Ok(d6) = space.d6(A(1), B(1), C(1), D(1), E(1), Infer("F"))
 
-  let xs = [1., 2., 3.]
+  let xs = [1.0, 2.0, 3.0]
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_floats
-  |> should.equal([0.])
+  |> should.equal([0.0])
 
   assert Ok(x) = tensor.from_floats(of: xs, into: d1)
   x
@@ -2178,7 +2179,7 @@ pub fn to_floats_test() {
   0
   |> tensor.from_int
   |> tensor.to_floats
-  |> should.equal([0.])
+  |> should.equal([0.0])
 
   assert Ok(x) = tensor.from_ints(of: ys, into: d1)
   x
@@ -2221,9 +2222,9 @@ pub fn to_ints_test() {
   |> tensor.to_ints
   |> should.equal(xs)
 
-  let ys = [1., 2., 3.]
+  let ys = [1.0, 2.0, 3.0]
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_ints
   |> should.equal([0])
@@ -2271,9 +2272,9 @@ pub fn to_bools_test() {
   |> tensor.to_bools
   |> should.equal(xs)
 
-  let ys = [1., 0., -3.]
+  let ys = [1.0, 0.0, -3.0]
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_bools
   |> should.equal([False])
@@ -2320,10 +2321,10 @@ if javascript {
 }
 
 pub fn to_string_test() {
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.to_string(return: tensor.Data, wrap_at: 0)
-  |> should.equal("0.")
+  |> should.equal("0.0")
 
   0
   |> tensor.from_int
@@ -2338,10 +2339,10 @@ pub fn to_string_test() {
 
   assert Ok(d1) = space.d1(Infer("A"))
 
-  assert Ok(x) = tensor.from_floats(of: [0.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [0.0], into: d1)
   x
   |> tensor.to_string(return: tensor.Data, wrap_at: 0)
-  |> should.equal("[0.]")
+  |> should.equal("[0.0]")
 
   assert Ok(x) = tensor.from_ints(of: [0], into: d1)
   x
@@ -2361,7 +2362,7 @@ pub fn to_string_test() {
 
   assert Ok(d2) = space.d2(A(2), B(2))
   assert Ok(x) =
-    [0., 2.25, 0.20000000298023224, -1.]
+    [0.0, 2.25, 0.20000000298023224, -1.0]
     |> tensor.from_floats(into: d2)
   x
   |> tensor.to_string(return: tensor.Record, wrap_at: 0)
@@ -2369,8 +2370,8 @@ pub fn to_string_test() {
     "Tensor(
   Format(Float32),
   Space(A(2), B(2)),
-  [[  0., 2.25],
-   [ 0.2,  -1.]],
+  [[ 0.0, 2.25],
+   [ 0.2, -1.0]],
 )",
   )
 
@@ -2439,12 +2440,12 @@ pub fn fit_test() {
   assert Ok(d1) = space.d1(Infer("A"))
   assert Ok(d2) = space.d2(Infer("A"), B(1))
 
-  0.
+  0.0
   |> tensor.from_float
   |> tensor.shape
   |> should.equal([])
 
-  assert Ok(x) = tensor.from_floats(of: [1., 2., 3.], into: d1)
+  assert Ok(x) = tensor.from_floats(of: [1.0, 2.0, 3.0], into: d1)
   x
   |> tensor.shape
   |> should.equal([3])

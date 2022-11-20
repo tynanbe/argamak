@@ -49,7 +49,7 @@ end
 
 ### JavaScript
 
-The `@tensorflow/tfjs` package is a runtime requirement for `argamak`, and its
+The `@tensorflow/tfjs` package is a runtime requirement for `argamak`; its
 import path in the `argamak_ffi.mjs` module might need adjustment, depending on
 your use case.
 
@@ -57,20 +57,55 @@ your use case.
 
 ```gleam
 // derby.gleam
+import argamak/axis.{Axis, Infer}
 import argamak/space
-import argamak/tensor
+import argamak/tensor.{InvalidData, TensorError}
+import gleam/function
+import gleam/io
+import gleam/list
+import gleam/result
+import gleam/string
 
-pub type Axis {
-  Horse
-  Trial
-}
+pub fn announce_winner(
+  from horses: List(String),
+  with times: List(Float),
+) -> Result(Nil, TensorError) {
+  assert Ok(d2) = space.d2(Infer("Horse"), Axis("Trial", 2))
+  try x = tensor.from_floats(of: times, into: d2)
 
-pub fn print_times(from list: List(Float)) {
-  assert Ok(space) = space.d2(#(Horse, 3), #(Trial, -1))
-  try tensor = tensor.from_floats(of: list, into: space)
+  let announce = function.compose(string.inspect, io.println)
 
-  tensor
-  |> tensor.print(wrap_at: -1, meta: True)
+  announce("Trial times per horse")
+  tensor.print(x)
+
+  announce("Mean time per horse")
+  let mean_times =
+    x
+    |> tensor.mean(with: fn(a) { axis.name(a) == "Trial" })
+    |> tensor.debug
+
+  let all_axes = fn(_) { True }
+
+  announce("Fastest mean time")
+  let time =
+    mean_times
+    |> tensor.min_over(with: all_axes)
+    |> tensor.debug
+    |> tensor.to_string(return: tensor.Data, wrap_at: 0)
+
+  announce("Fastest horse")
+  try horse =
+    mean_times
+    |> tensor.arg_min(with: all_axes)
+    |> tensor.debug
+    |> tensor.to_int
+  try horse =
+    horses
+    |> list.at(get: horse)
+    |> result.replace_error(InvalidData)
+
+  horse <> " wins the day with a mean time of " <> time <> " minutes!"
+  |> announce
   |> Ok
 }
 ```
@@ -78,13 +113,36 @@ pub fn print_times(from list: List(Float)) {
 ### Example
 
 ```gleam
-> derby.print_times(from: [1.2, 1.3, 1.3, 1., 1.5, 0.9])
-// Tensor
-// format: Float32
-// space: D2 #(Horse, 3), #(Trial, 2)
-// data:
-// [[1.2, 1.3],
-//  [1.3, 1.0],
-//  [1.5, 0.9]]
+> derby.announce_winner(
+>   from: ["Pony Express", "Hay Girl", "Low Rider"],
+>   with: [1.2, 1.3, 1.3, 1.0, 1.5, 0.9],
+> )
+"Trial times per horse"
+Tensor(
+  Format(Float32),
+  Space(Axis("Horse", 3), Axis("Trial", 2)),
+  [[1.2, 1.3],
+   [1.3, 1.0],
+   [1.5, 0.9]],
+)
+"Mean time per horse"
+Tensor(
+  Format(Float32),
+  Space(Axis("Horse", 3)),
+  [1.25, 1.15,  1.2],
+)
+"Fastest mean time"
+Tensor(
+  Format(Float32),
+  Space(),
+  1.15,
+)
+"Fastest horse"
+Tensor(
+  Format(Float32),
+  Space(),
+  1.0,
+)
+"Hay Girl wins the day with a mean time of 1.15 minutes!"
 Ok(Nil)
 ```

@@ -180,12 +180,8 @@ pub fn rename(x: Axis, name: String) -> Axis {
 
 /// Changes the `size` of the given `Axis`.
 ///
-/// If an `Axis` is renamed to a single capital letter (from `"A"` to `"Z"`
-/// inclusive), the single-letter convenience constructor will be used for the
-/// new `Axis`. 
-///
 /// Resizing an `Infer` returns an `Axis` record that will no longer have its
-/// `size` automatically computed as needed.
+/// `size` automatically computed.
 ///
 /// ## Examples
 ///

@@ -2,7 +2,7 @@ import argamak/axis.{Axes, Axis, Infer}
 import argamak/format.{Float32, Format, Int32}
 import argamak/space.{Space}
 import gleam/bool
-//import gleam/function
+import gleam/function
 import gleam/io
 import gleam/int
 import gleam/iterator
@@ -62,8 +62,8 @@ type Shape =
 /// ## Examples
 ///
 /// ```gleam
-/// > from_float(1.) |> print_data
-/// 1.
+/// > from_float(1.0) |> print_data
+/// 1.0
 /// Nil
 /// ```
 ///
@@ -114,7 +114,7 @@ pub fn from_bool(x: Bool) -> Tensor(Int32) {
 /// Results in a `Tensor` created from a list of floats and placed into a given
 /// `Space` on success, or a `TensorError` on failure.
 ///
-/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// The `Space` may have a single `Infer` `Axis`, the size of which will be
 /// determined based on the given list. This is useful when working with lists
 /// of unknown length.
 ///
@@ -124,37 +124,37 @@ pub fn from_bool(x: Bool) -> Tensor(Int32) {
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.], into: d1)
+/// > assert Ok(x) = from_floats(of: [1.0], into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [1.],
+///   [1.0],
 /// )
 /// Nil
 ///
 /// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3., 4.], into: d2)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2)),
-///   [[1., 2.],
-///    [3., 4.]],
+///   [[1.0, 2.0],
+///    [3.0, 4.0]],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
-/// > let xs = [1., 2., 3., 4., 5., 6., 7., 8.]
+/// > let xs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
 /// > assert Ok(x) = from_floats(of: xs, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2), Z(2)),
-///   [[[1., 2.],
-///     [3., 4.]],
-///    [[5., 6.],
-///     [7., 8.]]],
+///   [[[1.0, 2.0],
+///     [3.0, 4.0]],
+///    [[5.0, 6.0],
+///     [7.0, 8.0]]],
 /// )
 /// Nil
 /// ```
@@ -169,7 +169,7 @@ pub fn from_floats(
 /// Results in a `Tensor` created from a list of integers and placed into a
 /// given `Space` on success, or a `TensorError` on failure.
 ///
-/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// The `Space` may have a single `Infer` `Axis`, the size of which will be
 /// determined based on the given list. This is useful when working with lists
 /// of unknown length.
 ///
@@ -223,7 +223,7 @@ pub fn from_ints(of xs: List(Int), into space: Space) -> TensorResult(Int32) {
 ///
 /// `True` is represented by `1`, `False` by `0`.
 ///
-/// The `Space` may have a single `Infer` dimension, the size of which will be
+/// The `Space` may have a single `Infer` `Axis`, the size of which will be
 /// determined based on the given list. This is useful when working with lists
 /// of unknown length.
 ///
@@ -320,7 +320,7 @@ pub fn from_native(
 ///
 /// ```gleam
 /// import argamak/format
-/// > format(from_float(0.))
+/// > format(from_float(0.0))
 /// format.float32()
 ///
 /// > import argamak/axis.{Infer}
@@ -342,7 +342,7 @@ pub fn format(x: Tensor(a)) -> Format(a) {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > space(from_float(0.)) |> space.axes
+/// > space(from_float(0.0)) |> space.axes
 /// []
 ///
 /// > assert Ok(d1) = space.d1(Infer("X"))
@@ -371,7 +371,7 @@ pub fn space(x: Tensor(a)) -> Space {
 /// > import argamak/axis.{Axis, X}
 /// > import argamak/space
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
 /// > axes(x)
 /// [X(3)]
 ///
@@ -393,7 +393,7 @@ pub fn axes(x: Tensor(a)) -> Axes {
 /// ## Examples
 ///
 /// ```gleam
-/// > rank(from_float(0.))
+/// > rank(from_float(0.0))
 /// 0
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
@@ -420,7 +420,7 @@ pub fn rank(x: Tensor(a)) -> Int {
 /// ## Examples
 ///
 /// ```gleam
-/// > shape(from_float(0.))
+/// > shape(from_float(0.0))
 /// []
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
@@ -447,7 +447,7 @@ pub fn shape(x: Tensor(a)) -> Shape {
 /// ## Examples
 ///
 /// ```gleam
-/// > size(from_float(0.))
+/// > size(from_float(0.0))
 /// 1
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
@@ -458,7 +458,7 @@ pub fn shape(x: Tensor(a)) -> Shape {
 /// 3
 ///
 /// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > assert Ok(x) = from_ints(of: [0, 1, 2, 3, 4, 5, 6, 7], into: d3)
 /// > size(x)
 /// 8
 /// ```
@@ -486,8 +486,9 @@ if javascript {
 
 /// Changes the `Format` of a `Tensor`.
 ///
-/// Reformatting from `Float` formats to `Int` formats truncates the data. For
-/// consistency, consider using `round`, `floor`, or `ceiling` beforehand.
+/// Reformatting from `Float`-like formats to `Int`-like formats truncates the
+/// data. For consistency, consider using `round`, `floor`, or `ceiling`
+/// beforehand.
 ///
 /// Lowering precision may lead to an overflow or underflow, the outcome of
 /// which depends on platform and compiler.
@@ -496,19 +497,19 @@ if javascript {
 ///
 /// ```gleam
 /// > import argamak/format
-/// > reformat(from_int(0), apply: format.float32) |> print
+/// > reformat(from_int(0), apply: format.float32()) |> print
 /// Tensor(
 ///   Format(Float32),
 ///   Space(),
-///   0.,
+///   0.0,
 /// )
 /// Nil
 ///
 /// > import argamak/axis.{Infer}
 /// > import argamak/space
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
-/// > reformat(x, apply: format.int32) |> print
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
+/// > reformat(x, apply: format.int32()) |> print
 /// Tensor(
 ///   Format(Int32),
 ///   Space(X(3)),
@@ -537,36 +538,39 @@ if javascript {
 /// Results in a `Tensor` placed into a given `Space` on success, or a
 /// `TensorError` on failure.
 ///
+/// The new `Space` may have a single `Infer` `Axis`, the size of which will
+/// be determined based on the given `Tensor`.
+///
 /// ## Examples
 ///
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = reshape(put: from_float(1.), into: d1)
+/// > assert Ok(x) = reshape(put: from_float(1.0), into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [1.],
+///   [1.0],
 /// )
 /// Nil
 ///
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3., 4.], into: d1)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d1)
 /// > assert Ok(d2) = space.d2(X(2), Y(2))
 /// > assert Ok(x) = reshape(put: x, into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2)),
-///   [[1., 2.],
-///    [3., 4.]],
+///   [[1.0, 2.0],
+///    [3.0, 4.0]],
 /// )
 /// Nil
 ///
 /// > assert Ok(d2) = space.d2(X(2), Infer("Y"))
-/// > let xs = [1., 2., 3., 4., 5., 6., 7., 8.]
+/// > let xs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
 /// > assert Ok(x) = from_floats(of: xs, into: d2)
 /// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
 /// > assert Ok(x) = reshape(put: x, into: d3)
@@ -574,19 +578,22 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2), Z(2)),
-///   [[[1., 2.],
-///     [3., 4.]],
-///    [[5., 6.],
-///     [7., 8.]]],
+///   [[[1.0, 2.0],
+///     [3.0, 4.0]],
+///    [[5.0, 6.0],
+///     [7.0, 8.0]]],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Y(1), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.], into: d3)
+/// > assert Ok(x) = from_floats(of: [1.0], into: d3)
 /// > assert Ok(x) = reshape(put: x, into: space.new())
 /// > print_data(x)
-/// 1.
+/// 1.0
 /// Nil
+///
+/// > reshape(put: x, into: d2)
+/// Error(IncompatibleShape)
 /// ```
 ///
 pub fn reshape(put x: Tensor(a), into new_space: Space) -> TensorResult(a) {
@@ -618,7 +625,10 @@ if javascript {
 /// The new `Space` cannot have fewer `Axes` than the current `Space`.
 ///
 /// Each current `Axis` size must be `1` or equal to its counterpart in the new
-/// `Space`. `Axis` compatibility is considered element-wise, tail-first.
+/// `Space` (a dimensionless `Tensor` can be broadcast into any `Space`). `Axis`
+/// compatibility is considered element-wise, tail-first.
+///
+/// Any `Infer` in the new `Space` will result in failure.
 ///
 /// ## Examples
 ///
@@ -648,17 +658,21 @@ if javascript {
 /// Nil
 ///
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
 /// > assert Ok(d2) = space.d2(X(2), Y(3))
 /// > assert Ok(x) = broadcast(from: x, into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(3)),
-///   [[1., 2., 3.],
-///    [1., 2., 3.]],
+///   [[1.0, 2.0, 3.0],
+///    [1.0, 2.0, 3.0]],
 /// )
 /// Nil
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
+/// > broadcast(from: x, into: d3)
+/// Error(IncompatibleShape)
 /// ```
 ///
 pub fn broadcast(from x: Tensor(a), into new_space: Space) -> TensorResult(a) {
@@ -683,9 +697,6 @@ if javascript {
 /// A variant of `broadcast` that maps the given `Tensor`'s current `Axes` to
 /// arbitrary counterparts in the new `Space`.
 ///
-/// Results in a `Tensor` broadcast into a given `Space` on success, or a
-/// `TensorError` on failure.
-///
 /// The map function allows broadcasting into a `Space` that is incompatible
 /// with a standard `broadcast` operation. Any given new `Axis` must not be
 /// matched with multiple axes from the `Tensor`'s current `Space`, and the
@@ -698,16 +709,16 @@ if javascript {
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
 /// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d1)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
 /// > assert Ok(d2) = space.d2(X(3), Y(2))
 /// > assert Ok(y) = broadcast_over(from: x, into: d2, with: fn(_) { "X" })
 /// > print(y)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(3), Y(2)),
-///   [[1., 1.],
-///    [2., 2.],
-///    [3., 3.]],
+///   [[1.0, 1.0],
+///    [2.0, 2.0],
+///    [3.0, 3.0]],
 /// )
 /// Nil
 ///
@@ -753,6 +764,10 @@ if javascript {
 ///     [6, 6]]],
 /// )
 /// Nil
+///
+/// > assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
+/// > broadcast_over(from: x, into: d3, with: axis.name)
+/// Error(IncompatibleShape)
 /// ```
 ///
 pub fn broadcast_over(
@@ -762,56 +777,35 @@ pub fn broadcast_over(
 ) -> TensorResult(a) {
   let new_axes = space.axes(new_space)
 
-  // try mapped_axes =
-  //   x
-  //   |> axes
-  //   |> list.map(
-  //     with: space_map
-  //     |> function.compose(fn(name) {
-  //       new_axes
-  //       |> list.find_map(with: fn(axis) {
-  //         case axis.name(axis) == name {
-  //           True ->
-  //             #(name, axis.size(axis))
-  //             |> Ok
-  //           False -> Error(Nil)
-  //         }
-  //       })
-  //       |> result.replace_error(IncompatibleAxes)
-  //     }),
-  //   )
-  //   |> result.all
   try mapped_axes =
-    result.all({
-      use axis <- list.map(axes(x))
-      let name = space_map(axis)
-      {
-        use axis <- list.find_map(new_axes)
-        case axis.name(axis) == name {
-          True ->
-            #(name, axis.size(axis))
-            |> Ok
-          False -> Error(Nil)
-        }
-      }
-      |> result.replace_error(IncompatibleAxes)
-    })
+    x
+    |> axes
+    |> list.map(
+      with: space_map
+      |> function.compose(fn(name) {
+        new_axes
+        |> list.find_map(with: fn(axis) {
+          case axis.name(axis) == name {
+            True ->
+              #(name, axis.size(axis))
+              |> Ok
+            False -> Error(Nil)
+          }
+        })
+        |> result.replace_error(IncompatibleAxes)
+      }),
+    )
+    |> result.all
   let axis_map = map.from_list(mapped_axes)
 
   // TODO: use higher level functions?
-  // let pre_shape =
-  //   new_axes
-  //   |> list.map(with: fn(axis) {
-  //     axis_map
-  //     |> map.get(axis.name(axis))
-  //     |> result.unwrap(or: 1)
-  //   })
-  let pre_shape = {
-    use axis <- list.map(new_axes)
-    axis_map
-    |> map.get(axis.name(axis))
-    |> result.unwrap(or: 1)
-  }
+  let pre_shape =
+    new_axes
+    |> list.map(with: fn(axis) {
+      axis_map
+      |> map.get(axis.name(axis))
+      |> result.unwrap(or: 1)
+    })
 
   let shape = space.shape(new_space)
   try native =
@@ -878,18 +872,13 @@ pub fn broadcast_over(
 /// ```
 ///
 pub fn squeeze(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
-  // let filter = fn(axis) {
-  //   case axis.size(axis) {
-  //     1 -> filter(axis)
-  //     _else -> False
-  //   }
-  // }
-  // reducible_over_axes(do_squeeze, x, filter, Away)
-  use axis <- reducible_over_axes(do_squeeze, x, _, Away)
-  case axis.size(axis) {
-    1 -> filter(axis)
-    _else -> False
+  let filter = fn(axis) {
+    case axis.size(axis) {
+      1 -> filter(axis)
+      _else -> False
+    }
   }
+  reducible_over_axes(do_squeeze, x, filter, Away)
 }
 
 if erlang {
@@ -943,8 +932,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > equal(is: b, to: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1004,8 +993,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > not_equal(is: b, to: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1066,8 +1055,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > greater(is: b, than: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1128,8 +1117,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > greater_or_equal(is: b, to: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1190,8 +1179,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > less(is: b, than: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1252,8 +1241,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > less_or_equal(is: b, to: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1279,8 +1268,8 @@ if javascript {
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
 ///
-/// Values that are nonzero in both the first and second `Tensor`s are
-/// represented by `1`, otherwise `0`, with `Format` retained.
+/// Values that are nonzero in both the first and second tensors are represented
+/// by `1`, otherwise `0`, with `Format` retained.
 ///
 /// ## Examples
 ///
@@ -1314,8 +1303,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_and(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1376,8 +1365,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_or(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1438,8 +1427,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_xor(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1464,7 +1453,7 @@ if javascript {
 
 /// Returns the element-wise logical opposite of the given `Tensor`.
 ///
-/// Values that are nonzero are represented by `1`, otherwise `0`, with `Format`
+/// Values that are nonzero are represented by `0`, otherwise `1`, with `Format`
 /// retained.
 ///
 /// ## Examples
@@ -1487,7 +1476,7 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [0.],
+///   [0.0],
 /// )
 /// Nil
 ///
@@ -1557,8 +1546,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > add(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1617,8 +1606,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > subtract(from: b, value: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1676,8 +1665,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > multiply(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1723,23 +1712,23 @@ if javascript {
 ///
 /// > let a = reformat(a, apply: format.float32())
 /// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_floats(of: [0., 4., 5., 9.], into: d2)
+/// > assert Ok(b) = from_floats(of: [0.0, 4.0, 5.0, 9.0], into: d2)
 /// > assert Ok(x) = divide(from: a, by: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2)),
-///   [[  0., 2.25],
-///    [ 0.2,   1.]],
+///   [[ 0.0, 2.25],
+///    [ 0.2,  1.0]],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_floats(of: [4., 5., 0.], into: d3)
+/// > assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
 /// > divide(from: b, by: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1765,9 +1754,6 @@ if javascript {
 
 /// A variant of `divide` that results in a `TensorError` if any value of the
 /// divisor is zero.
-///
-/// Results in a `Tensor` that is the element-wise division of one `Tensor` by
-/// another on success (broadcast as needed), or a `TensorError` on failure.
 ///
 /// ## Examples
 ///
@@ -1834,8 +1820,8 @@ pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > remainder(from: b, divided_by: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1869,10 +1855,6 @@ if javascript {
 
 /// A variant of `remainder` that results in a `TensorError` if any value of the
 /// divisor is zero.
-///
-/// Results in a `Tensor` that is the element-wise remainder when dividing one
-/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
-/// failure.
 ///
 /// ## Examples
 ///
@@ -1942,8 +1924,8 @@ pub fn try_remainder(
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > modulo(from: b, divided_by: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -1977,10 +1959,6 @@ if javascript {
 
 /// A variant of `modulo` that results in a `TensorError` if any value of the
 /// divisor is zero.
-///
-/// Results in a `Tensor` that is the element-wise modulus when dividing one
-/// `Tensor` by another on success (broadcast as needed), or a `TensorError` on
-/// failure.
 ///
 /// ## Examples
 ///
@@ -2031,23 +2009,23 @@ pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a)
 ///
 /// > let a = reformat(a, apply: format.float32())
 /// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_floats(of: [0., 0.4, 0.5, 0.9], into: d2)
+/// > assert Ok(b) = from_floats(of: [0.0, 0.4, 0.5, 0.9], into: d2)
 /// > assert Ok(x) = power(raise: a, to_the: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(2), Y(2)),
-///   [[   1., 2.408],
-///    [   1., 7.225]],
+///   [[  1.0, 2.408],
+///    [  1.0, 7.225]],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_floats(of: [4., 5., 0.], into: d3)
+/// > assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
 /// > power(raise: b, to_the: c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -2105,8 +2083,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > max(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -2164,8 +2142,8 @@ if javascript {
 /// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > min(b, c)
 /// Error(SpaceErrors([
-///   SpaceError(CannotMerge, X(2)),
-///   SpaceError(CannotMerge, Y(2)),
+///   SpaceError(CannotMerge, [Y(3), X(2)]),
+///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
 /// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
@@ -2323,7 +2301,7 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [-1.],
+///   [-1.0],
 /// )
 /// Nil
 ///
@@ -2377,19 +2355,19 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [0.],
+///   [0.0],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > ceiling(x) |> print
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1), Y(3), Z(1)),
-///   [[[-1.],
-///     [ 8.],
-///     [ 0.]]],
+///   [[[-1.0],
+///     [ 8.0],
+///     [ 0.0]]],
 /// )
 /// Nil
 /// ```
@@ -2430,19 +2408,19 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [-1.],
+///   [-1.0],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > floor(x) |> print
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1), Y(3), Z(1)),
-///   [[[-2.],
-///     [ 7.],
-///     [ 0.]]],
+///   [[[-2.0],
+///     [ 7.0],
+///     [ 0.0]]],
 /// )
 /// Nil
 /// ```
@@ -2484,19 +2462,19 @@ if javascript {
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1)),
-///   [-1.],
+///   [-1.0],
 /// )
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > round(x) |> print
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1), Y(3), Z(1)),
-///   [[[-1.],
-///     [ 8.],
-///     [ 0.]]],
+///   [[[-1.0],
+///     [ 8.0],
+///     [ 0.0]]],
 /// )
 /// Nil
 /// ```
@@ -2543,14 +2521,14 @@ if javascript {
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > exp(x) |> print
 /// Tensor(
 ///   Format(Float32),
 ///   Space(X(1), Y(3), Z(1)),
 ///   [[[   0.301],
 ///     [2440.603],
-///     [      1.]]],
+///     [     1.0]]],
 /// )
 /// Nil
 /// ```
@@ -2598,7 +2576,7 @@ if javascript {
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
 /// > assert Ok(x) = square_root(x)
 /// > print(x)
 /// Tensor(
@@ -2606,7 +2584,7 @@ if javascript {
 ///   Space(X(1), Y(3), Z(1)),
 ///   [[[1.095],
 ///     [2.793],
-///     [   0.]]],
+///     [  0.0]]],
 /// )
 /// Nil
 ///
@@ -2662,7 +2640,7 @@ if javascript {
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.], into: d3)
+/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
 /// > assert Ok(x) = ln(x)
 /// > print(x)
 /// Tensor(
@@ -2707,8 +2685,8 @@ if javascript {
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -2767,7 +2745,7 @@ if javascript {
     "../argamak_ffi.mjs" "all"
 }
 
-/// A variant of `all` that preserves all axes from the given `Tensor`.
+/// A variant of `all` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -2802,8 +2780,8 @@ pub fn in_situ_all(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -2862,7 +2840,7 @@ if javascript {
     "../argamak_ffi.mjs" "any"
 }
 
-/// A variant of `any` that preserves all axes from the given `Tensor`.
+/// A variant of `any` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -2958,7 +2936,7 @@ if javascript {
     "../argamak_ffi.mjs" "arg_max"
 }
 
-/// A variant of `arg_max` that preserves all axes from the given `Tensor`.
+/// A variant of `arg_max` that preserves all `Axes` from the given `Tensor`.
 ///
 /// An `Axis` for which the given `find` function returns `True` will retain a
 /// size of `1` after the operation.
@@ -3062,7 +3040,7 @@ if javascript {
     "../argamak_ffi.mjs" "arg_min"
 }
 
-/// A variant of `arg_min` that preserves all axes from the given `Tensor`.
+/// A variant of `arg_min` that preserves all `Axes` from the given `Tensor`.
 ///
 /// An `Axis` for which the given `find` function returns `True` will retain a
 /// size of `1` after the operation.
@@ -3105,8 +3083,8 @@ pub fn in_situ_arg_min(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -3165,7 +3143,7 @@ if javascript {
     "../argamak_ffi.mjs" "max_over"
 }
 
-/// A variant of `max_over` that preserves all axes from the given `Tensor`.
+/// A variant of `max_over` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -3208,8 +3186,8 @@ pub fn in_situ_max_over(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -3268,7 +3246,7 @@ if javascript {
     "../argamak_ffi.mjs" "min_over"
 }
 
-/// A variant of `min_over` that preserves all axes from the given `Tensor`.
+/// A variant of `min_over` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -3311,8 +3289,8 @@ pub fn in_situ_min_over(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -3371,7 +3349,7 @@ if javascript {
     "../argamak_ffi.mjs" "sum"
 }
 
-/// A variant of `sum` that preserves all axes from the given `Tensor`.
+/// A variant of `sum` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -3414,8 +3392,8 @@ pub fn in_situ_sum(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -3474,7 +3452,7 @@ if javascript {
     "../argamak_ffi.mjs" "product"
 }
 
-/// A variant of `product` that preserves all axes from the given `Tensor`.
+/// A variant of `product` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -3517,8 +3495,8 @@ pub fn in_situ_product(
 /// Any `Axis` for which the given `filter` function returns `True` is selected
 /// for reduction and will be removed from the reduced tensor's `Space`.
 ///
-/// If the `filter` function returns `False` for every `Axis`, all axes will be
-/// retained and the operation applied to every value of the `Tensor`
+/// If the `filter` function returns `False` for every `Axis`, all `Axes` will
+/// be retained and the operation applied to every value of the `Tensor`
 /// individually.
 ///
 /// ## Examples
@@ -3545,7 +3523,7 @@ pub fn in_situ_product(
 /// Nil
 ///
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_floats(of: [1., 4., 3., 2.], into: d3)
+/// > assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
 /// > mean(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3577,7 +3555,7 @@ if javascript {
     "../argamak_ffi.mjs" "mean"
 }
 
-/// A variant of `mean` that preserves all axes from the given `Tensor`.
+/// A variant of `mean` that preserves all `Axes` from the given `Tensor`.
 ///
 /// Any `Axis` for which the given `filter` function returns `True` will retain
 /// a size of `1` after the operation.
@@ -3588,18 +3566,18 @@ if javascript {
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
 /// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_floats(of: [1., 4., 3., 2.], into: d3)
-/// > in_situ_product(x, with: fn(_) { True }) |> print
+/// > assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
+/// > in_situ_mean(x, with: fn(_) { True }) |> print
 /// Tensor(
-///   Format(Int32),
+///   Format(Float32),
 ///   Space(X(1), Y(1), Z(1)),
 ///   [[[2.5]]],
 /// )
 /// Nil
 ///
-/// > in_situ_product(x, with: fn(a) { axis.name(a) == "Z" }) |> print
+/// > in_situ_mean(x, with: fn(a) { axis.name(a) == "Z" }) |> print
 /// Tensor(
-///   Format(Int32),
+///   Format(Float32),
 ///   Space(X(1), Y(2), Z(1)),
 ///   [[[2.5],
 ///     [2.5]]],
@@ -3635,17 +3613,20 @@ pub fn in_situ_mean(
 // Conversion Functions                   //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-/// Results in a `Float` converted from a shapeless `Tensor` on success, or a
-/// `TensorError` on failure.
+/// Results in a `Float` converted from a dimensionless `Tensor` on success, or
+/// a `TensorError` on failure.
+///
+/// Values that are infinite will be clipped to min/max finite values based on
+/// the current `Format`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > to_float(from_float(0.))
-/// Ok(0.)
+/// > to_float(from_float(0.0))
+/// Ok(0.0)
 ///
 /// > to_float(from_int(0))
-/// Ok(0.)
+/// Ok(0.0)
 ///
 /// import argamak/axis.{Infer}
 /// import argamak/space
@@ -3671,13 +3652,16 @@ if javascript {
     "../argamak_ffi.mjs" "to_float"
 }
 
-/// Results in a `Int` converted from a shapeless `Tensor` on success, or a
+/// Results in an `Int` converted from a dimensionless `Tensor` on success, or a
 /// `TensorError` on failure.
+///
+/// Values that are infinite will be clipped to min/max finite values based on
+/// the current `Format`.
 ///
 /// ## Examples
 ///
 /// ```gleam
-/// > to_int(from_float(0.))
+/// > to_int(from_float(0.0))
 /// Ok(0)
 ///
 /// > to_int(from_int(0))
@@ -3707,7 +3691,7 @@ if javascript {
     "../argamak_ffi.mjs" "to_int"
 }
 
-/// Results in a `Bool` converted from a shapeless `Tensor` on success, or a
+/// Results in a `Bool` converted from a dimensionless `Tensor` on success, or a
 /// `TensorError` on failure.
 ///
 /// Nonzero values become `True`, otherwise `False`.
@@ -3715,7 +3699,7 @@ if javascript {
 /// ## Examples
 ///
 /// ```gleam
-/// > to_bool(from_float(0.))
+/// > to_bool(from_float(0.0))
 /// Ok(False)
 ///
 /// > to_bool(from_int(1))
@@ -3739,18 +3723,21 @@ pub fn to_bool(x: Tensor(a)) -> Result(Bool, TensorError) {
 
 /// Converts a `Tensor` into a flat list of floats.
 ///
+/// Values that are infinite will be clipped to min/max finite values based on
+/// the current `Format`.
+///
 /// ## Examples
 ///
 /// ```gleam
 /// > to_floats(from_int(0))
-/// [0.]
+/// [0.0]
 ///
 /// > import argamak/axis.{X, Y}
 /// > import argamak/space
 /// > assert Ok(d2) = space.d2(X(3), Y(1))
-/// > assert Ok(x) = from_floats(of: [1., 2., 3.], into: d2)
+/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d2)
 /// > to_floats(x)
-/// [1., 2., 3.]
+/// [1.0, 2.0, 3.0]
 /// ```
 ///
 pub fn to_floats(x: Tensor(a)) -> List(Float) {
@@ -3771,10 +3758,13 @@ if javascript {
 
 /// Converts a `Tensor` into a flat list of integers.
 ///
+/// Values that are infinite will be clipped to min/max finite values based on
+/// the current `Format`.
+///
 /// ## Examples
 ///
 /// ```gleam
-/// > to_ints(from_float(0.))
+/// > to_ints(from_float(0.0))
 /// [0]
 ///
 /// > import argamak/axis.{X, Y}
@@ -3808,7 +3798,7 @@ if javascript {
 /// ## Examples
 ///
 /// ```gleam
-/// > to_bools(from_float(0.))
+/// > to_bools(from_float(0.0))
 /// [False]
 ///
 /// > import argamak/axis.{X, Y}
@@ -3842,6 +3832,9 @@ pub fn to_native(x: Tensor(a)) -> Native {
   x.data
 }
 
+/// A type used to specify how to convert a `Tensor` into a `String` via the
+/// `to_string` function.
+///
 pub type ToString {
   Data
   Record
@@ -3933,153 +3926,6 @@ type ToStringAcc {
   ToStringAcc(built: List(StringBuilder), builder: StringBuilder)
 }
 
-// fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String {
-//   let #(xs, item_length) =
-//     x
-//     |> to_native
-//     |> prepare_to_string
-// 
-//   let rank = rank(x)
-// 
-//   let shape = case rank {
-//     0 -> [1]
-//     _else ->
-//       x
-//       |> shape
-//       |> list.reverse
-//   }
-// 
-//   let try_wrap = case column > 0 {
-//     True -> {
-//       let max_length = column - tab - rank * 2
-//       let item_length = item_length + 2
-//       let wrap_at = int.max(max_length / item_length, 1)
-//       let inner_size = case shape {
-//         [inner_size, ..] -> inner_size
-//         _else -> 0
-//       }
-//       fn(j, f) {
-//         case { j + 1 } % wrap_at {
-//           0 if wrap_at < inner_size -> fn() { Ok(f()) }
-//           _else -> fn() { Error(Nil) }
-//         }
-//       }
-//     }
-//     False -> fn(_, _) { fn() { Error(Nil) } }
-//   }
-// 
-//   let ToStringAcc(builder: init_builder, ..) as to_string_acc =
-//     ToStringAcc(built: [], builder: string_builder.new())
-// 
-//   let xs =
-//     xs
-//     |> iterator.from_list
-//     |> iterator.map(with: fn(x) {
-//       x
-//       |> string.pad_left(to: item_length, with: " ")
-//       |> string_builder.from_string
-//     })
-//     |> iterator.index
-// 
-//   let [#(_, xs)] =
-//     shape
-//     |> list.index_fold(
-//       from: xs,
-//       with: fn(acc, size, i) {
-//         let try_build = fn(j, f) {
-//           case { j + 1 } % size {
-//             0 -> Ok(f())
-//             _else -> Error(Nil)
-//           }
-//         }
-// 
-//         let ToStringAcc(built: built, ..) = case i {
-//           0 ->
-//             acc
-//             |> iterator.fold(
-//               from: to_string_acc,
-//               with: fn(acc, item) {
-//                 let #(j, x) = item
-//                 let builder =
-//                   string_builder.append_builder(to: acc.builder, suffix: x)
-//                 j
-//                 |> try_build(fn() {
-//                   case rank {
-//                     0 ->
-//                       ToStringAcc(
-//                         ..acc,
-//                         built: list.append(acc.built, [builder]),
-//                       )
-//                     _else -> {
-//                       let builder =
-//                         builder
-//                         |> string_builder.prepend(prefix: "[")
-//                         |> string_builder.append(suffix: "]")
-//                       ToStringAcc(
-//                         built: list.append(acc.built, [builder]),
-//                         builder: init_builder,
-//                       )
-//                     }
-//                   }
-//                 })
-//                 |> result.lazy_or(try_wrap(
-//                   j,
-//                   fn() {
-//                     let indent = string.repeat(" ", times: tab + rank)
-//                     let builder =
-//                       builder
-//                       |> string_builder.append(suffix: ",\n")
-//                       |> string_builder.append(suffix: indent)
-//                     ToStringAcc(..acc, builder: builder)
-//                   },
-//                 ))
-//                 |> result.lazy_unwrap(or: fn() {
-//                   let builder = string_builder.append(to: builder, suffix: ", ")
-//                   ToStringAcc(..acc, builder: builder)
-//                 })
-//               },
-//             )
-//           _else ->
-//             acc
-//             |> iterator.fold(
-//               from: to_string_acc,
-//               with: fn(acc, item) {
-//                 let #(j, x) = item
-//                 let builder =
-//                   string_builder.append_builder(to: acc.builder, suffix: x)
-//                 j
-//                 |> try_build(fn() {
-//                   let builder =
-//                     builder
-//                     |> string_builder.prepend(prefix: "[")
-//                     |> string_builder.append(suffix: "]")
-//                   ToStringAcc(
-//                     built: list.append(acc.built, [builder]),
-//                     builder: init_builder,
-//                   )
-//                 })
-//                 |> result.lazy_unwrap(or: fn() {
-//                   let indent = string.repeat(" ", times: tab + rank - i)
-//                   let builder =
-//                     builder
-//                     |> string_builder.append(suffix: ",\n")
-//                     |> string_builder.append(suffix: indent)
-//                   ToStringAcc(..acc, builder: builder)
-//                 })
-//               },
-//             )
-//         }
-//         built
-//         |> iterator.from_list
-//         |> iterator.index
-//       },
-//     )
-//     |> iterator.to_list
-//   let indent = string.repeat(" ", times: tab)
-//   xs
-//   |> string_builder.prepend(prefix: indent)
-//   |> string_builder.to_string
-// }
 fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String {
   let #(xs, item_length) =
     x
@@ -4096,7 +3942,7 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
       |> list.reverse
   }
 
-  let should_wrap = case column > 0 {
+  let try_wrap = case column > 0 {
     True -> {
       let max_length = column - tab - rank * 2
       let item_length = item_length + 2
@@ -4105,99 +3951,123 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
         [inner_size, ..] -> inner_size
         _else -> 0
       }
-      fn(j) { { j + 1 } % wrap_at == 0 && wrap_at < inner_size }
+      fn(j, f) {
+        case { j + 1 } % wrap_at {
+          0 if wrap_at < inner_size -> fn() { Ok(f()) }
+          _else -> fn() { Error(Nil) }
+        }
+      }
     }
-    False -> fn(_) { False }
+    False -> fn(_, _) { fn() { Error(Nil) } }
   }
 
   let ToStringAcc(builder: init_builder, ..) as to_string_acc =
     ToStringAcc(built: [], builder: string_builder.new())
 
   let xs =
-    iterator.index({
-      use x <- iterator.map(over: iterator.from_list(xs))
+    xs
+    |> iterator.from_list
+    |> iterator.map(with: fn(x) {
       x
       |> string.pad_left(to: item_length, with: " ")
       |> string_builder.from_string
     })
+    |> iterator.index
 
   let [#(_, xs)] =
-    iterator.to_list({
-      use acc, size, i <- list.index_fold(over: shape, from: xs)
-      let should_build = fn(j) { { j + 1 } % size == 0 }
-      let ToStringAcc(built: built, ..) = case i {
-        0 -> {
-          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
-          let #(j, x) = item
-          let builder =
-            string_builder.append_builder(to: acc.builder, suffix: x)
-          let should_build_j = should_build(j)
-          use <- when(
-              should_build_j && rank == 0,
-              then: fn() {
-                ToStringAcc(..acc, built: list.append(acc.built, [builder]))
-              },
-            )
-          use <- when(
-              should_build_j,
-              then: fn() {
-                let builder =
-                  builder
-                  |> string_builder.prepend(prefix: "[")
-                  |> string_builder.append(suffix: "]")
-                ToStringAcc(
-                  built: list.append(acc.built, [builder]),
-                  builder: init_builder,
-                )
-              },
-            )
-          use <- when(
-              should_wrap(j),
-              then: fn() {
-                let indent = string.repeat(" ", times: tab + rank)
-                let builder =
-                  builder
-                  |> string_builder.append(suffix: ",\n")
-                  |> string_builder.append(suffix: indent)
-                ToStringAcc(..acc, builder: builder)
-              },
-            )
-          // else
-          let builder = string_builder.append(to: builder, suffix: ", ")
-          ToStringAcc(..acc, builder: builder)
+    shape
+    |> list.index_fold(
+      from: xs,
+      with: fn(acc, size, i) {
+        let try_build = fn(j, f) {
+          case { j + 1 } % size {
+            0 -> Ok(f())
+            _else -> Error(Nil)
+          }
         }
-        _else -> {
-          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
-          let #(j, x) = item
-          let builder =
-            string_builder.append_builder(to: acc.builder, suffix: x)
-          use <- when(
-              should_build(j),
-              then: fn() {
-                let builder =
-                  builder
-                  |> string_builder.prepend(prefix: "[")
-                  |> string_builder.append(suffix: "]")
-                ToStringAcc(
-                  built: list.append(acc.built, [builder]),
-                  builder: init_builder,
-                )
-              },
-            )
-          // else
-          let indent = string.repeat(" ", times: tab + rank - i)
-          let builder =
-            builder
-            |> string_builder.append(suffix: ",\n")
-            |> string_builder.append(suffix: indent)
-          ToStringAcc(..acc, builder: builder)
-        }
-      }
-      built
-      |> iterator.from_list
-      |> iterator.index
-    })
 
+        let ToStringAcc(built: built, ..) = case i {
+          0 ->
+            acc
+            |> iterator.fold(
+              from: to_string_acc,
+              with: fn(acc, item) {
+                let #(j, x) = item
+                let builder =
+                  string_builder.append_builder(to: acc.builder, suffix: x)
+                j
+                |> try_build(fn() {
+                  case rank {
+                    0 ->
+                      ToStringAcc(
+                        ..acc,
+                        built: list.append(acc.built, [builder]),
+                      )
+                    _else -> {
+                      let builder =
+                        builder
+                        |> string_builder.prepend(prefix: "[")
+                        |> string_builder.append(suffix: "]")
+                      ToStringAcc(
+                        built: list.append(acc.built, [builder]),
+                        builder: init_builder,
+                      )
+                    }
+                  }
+                })
+                |> result.lazy_or(try_wrap(
+                  j,
+                  fn() {
+                    let indent = string.repeat(" ", times: tab + rank)
+                    let builder =
+                      builder
+                      |> string_builder.append(suffix: ",\n")
+                      |> string_builder.append(suffix: indent)
+                    ToStringAcc(..acc, builder: builder)
+                  },
+                ))
+                |> result.lazy_unwrap(or: fn() {
+                  let builder = string_builder.append(to: builder, suffix: ", ")
+                  ToStringAcc(..acc, builder: builder)
+                })
+              },
+            )
+          _else ->
+            acc
+            |> iterator.fold(
+              from: to_string_acc,
+              with: fn(acc, item) {
+                let #(j, x) = item
+                let builder =
+                  string_builder.append_builder(to: acc.builder, suffix: x)
+                j
+                |> try_build(fn() {
+                  let builder =
+                    builder
+                    |> string_builder.prepend(prefix: "[")
+                    |> string_builder.append(suffix: "]")
+                  ToStringAcc(
+                    built: list.append(acc.built, [builder]),
+                    builder: init_builder,
+                  )
+                })
+                |> result.lazy_unwrap(or: fn() {
+                  let indent = string.repeat(" ", times: tab + rank - i)
+                  let builder =
+                    builder
+                    |> string_builder.append(suffix: ",\n")
+                    |> string_builder.append(suffix: indent)
+                  ToStringAcc(..acc, builder: builder)
+                })
+              },
+            )
+        }
+        built
+        |> iterator.from_list
+        |> iterator.index
+      },
+    )
+    |> iterator.to_list
   let indent = string.repeat(" ", times: tab)
   xs
   |> string_builder.prepend(prefix: indent)
@@ -4368,48 +4238,31 @@ type FitAcc(axis) {
 ///
 fn fit(x: Tensor(a)) -> TensorResult(a) {
   let dividend = size(x)
-  // let FitAcc(divisor: divisor, fit_by: fit_by) =
-  //   x
-  //   |> axes
-  //   |> list.fold(
-  //     from: FitAcc(divisor: 1, fit_by: Definition),
-  //     with: fn(acc, axis) {
-  //       case axis {
-  //         Infer(_) -> FitAcc(..acc, fit_by: Inference)
-  //         _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
-  //       }
-  //     },
-  //   )
-  let FitAcc(divisor: divisor, fit_by: fit_by) = {
-    use
-      acc,
-      axis
-    <- list.fold(over: axes(x), from: FitAcc(divisor: 1, fit_by: Definition))
-    case axis {
-      Infer(_) -> FitAcc(..acc, fit_by: Inference)
-      _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
-    }
-  }
+  let FitAcc(divisor: divisor, fit_by: fit_by) =
+    x
+    |> axes
+    |> list.fold(
+      from: FitAcc(divisor: 1, fit_by: Definition),
+      with: fn(acc, axis) {
+        case axis {
+          Infer(_) -> FitAcc(..acc, fit_by: Inference)
+          _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
+        }
+      },
+    )
 
   case dividend % divisor {
     0 if fit_by == Definition -> Ok(x)
     0 if fit_by == Inference -> {
-      // assert Ok(space) =
-      //   x
-      //   |> space
-      //   |> space.map(with: fn(axis) {
-      //     case axis {
-      //       Infer(_) -> axis.resize(axis, dividend / divisor)
-      //       _else -> axis
-      //     }
-      //   })
-      assert Ok(space) = {
-        use axis <- space.map(space(x))
-        case axis {
-          Infer(_) -> axis.resize(axis, dividend / divisor)
-          _else -> axis
-        }
-      }
+      assert Ok(space) =
+        x
+        |> space
+        |> space.map(with: fn(axis) {
+          case axis {
+            Infer(_) -> axis.resize(axis, dividend / divisor)
+            _else -> axis
+          }
+        })
       Tensor(..x, space: space)
       |> Ok
     }
@@ -4483,40 +4336,25 @@ fn reducible_over_axes(
   filter: fn(Axis) -> Bool,
   reduce: Reducible,
 ) -> Tensor(a) {
-  // let acc =
-  //   x
-  //   |> axes
-  //   |> list.index_fold(
-  //     from: ReducibleAcc([], []),
-  //     with: fn(acc, axis, index) {
-  //       case filter(axis) {
-  //         True if reduce == InSitu -> {
-  //           let axis = axis.resize(axis, 1)
-  //           ReducibleAcc(
-  //             axes: [axis, ..acc.axes],
-  //             indices: [index, ..acc.indices],
-  //           )
-  //         }
-  //         True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
-  //         False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-  //       }
-  //     },
-  //   )
-  let acc = {
-    use
-      acc,
-      axis,
-      index
-    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
-    case filter(axis) {
-      True if reduce == InSitu -> {
-        let axis = axis.resize(axis, 1)
-        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index, ..acc.indices])
-      }
-      True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
-      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-    }
-  }
+  let acc =
+    x
+    |> axes
+    |> list.index_fold(
+      from: ReducibleAcc([], []),
+      with: fn(acc, axis, index) {
+        case filter(axis) {
+          True if reduce == InSitu -> {
+            let axis = axis.resize(axis, 1)
+            ReducibleAcc(
+              axes: [axis, ..acc.axes],
+              indices: [index, ..acc.indices],
+            )
+          }
+          True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
+          False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+        }
+      },
+    )
   assert Ok(new_space) =
     acc.axes
     |> list.reverse
@@ -4549,37 +4387,22 @@ fn reducible_over_axis(
   find: fn(Axis) -> Bool,
   reduce: Reducible,
 ) -> Tensor(a) {
-  // let acc =
-  //   x
-  //   |> axes
-  //   |> list.index_fold(
-  //     from: ReducibleAcc([], []),
-  //     with: fn(acc, axis, index) {
-  //       case acc.indices == [] && find(axis) {
-  //         True if reduce == InSitu -> {
-  //           let axis = axis.resize(axis, 1)
-  //           ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
-  //         }
-  //         True -> ReducibleAcc(..acc, indices: [index])
-  //         False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-  //       }
-  //     },
-  //   )
-  let acc = {
-    use
-      acc,
-      axis,
-      index
-    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
-    case acc.indices == [] && find(axis) {
-      True if reduce == InSitu -> {
-        let axis = axis.resize(axis, 1)
-        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
-      }
-      True -> ReducibleAcc(..acc, indices: [index])
-      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-    }
-  }
+  let acc =
+    x
+    |> axes
+    |> list.index_fold(
+      from: ReducibleAcc([], []),
+      with: fn(acc, axis, index) {
+        case acc.indices == [] && find(axis) {
+          True if reduce == InSitu -> {
+            let axis = axis.resize(axis, 1)
+            ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
+          }
+          True -> ReducibleAcc(..acc, indices: [index])
+          False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+        }
+      },
+    )
   assert Ok(new_space) =
     acc.axes
     |> list.reverse
@@ -4609,12 +4432,5 @@ fn int_to_bool(x) {
   case x {
     0 -> False
     _else -> True
-  }
-}
-
-fn when(condition: Bool, then f: fn() -> a, else g: fn() -> a) -> a {
-  case condition {
-    True -> f()
-    False -> g()
   }
 }
