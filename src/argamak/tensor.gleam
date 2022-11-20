@@ -798,7 +798,6 @@ pub fn broadcast_over(
     |> result.all
   let axis_map = map.from_list(mapped_axes)
 
-  // TODO: use higher level functions?
   let pre_shape =
     new_axes
     |> list.map(with: fn(axis) {
@@ -3591,23 +3590,6 @@ pub fn in_situ_mean(
 ) -> Tensor(a) {
   reducible_over_axes(do_mean, x, filter, InSitu)
 }
-
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-// Slicing & Joining Functions            //
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-
-// TODO
-// concat
-// take
-//   take_along_axis
-//   gather
-// reverse
-// slice
-// put_slice
-// split
-// tile
-// stack
-// unstack
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Conversion Functions                   //

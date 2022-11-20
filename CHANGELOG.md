@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 - 2022-11-20
 
 - The `tensor` module gains the `TensorResult` type; the `from_bool` and
   `from_bools` creation functions; the `size` reflection function; the `squeeze`
