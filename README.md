@@ -70,7 +70,32 @@ pub fn announce_winner(
   from horses: List(String),
   with times: List(Float),
 ) -> Result(Nil, TensorError) {
-  assert Ok(d2) = space.d2(Infer("Horse"), Axis("Trial", 2))
+  // Space records help maintain a clear understanding of a Tensor's data.
+  //
+  // We begin by creating a two-dimensional Space with "Horse" and "Trial" Axes.
+  // The "Trial" Axis size is two because horses always run twice in our derby.
+  // The "Horse" Axis size will be inferred based on the data when a Tensor is
+  // put into our Space (perhaps we won't always know how many horses will run).
+  //
+  assert Ok(d2) = space.d2(Infer(name: "Horse"), Axis(name: "Trial", size: 2))
+
+  // Every Tensor has a numerical Format, a Space, and some data.
+  // A 2d Tensor can be visualized like a table or matrix.
+  //
+  // Tensor(
+  //   Format(Float32)
+  //   Space(Axis("Horse", 5), Axis("Trial", 2))
+  //
+  //                Trial
+  //  H [[horse1_time1, horse1_time2],
+  //  o  [horse2_time1, horse2_time2],
+  //  r  [horse3_time1, horse3_time2],
+  //  s  [horse4_time1, horse4_time2],
+  //  e  [horse5_time1, horse5_time2]],
+  // )
+  //
+  // Next we create a Tensor from a List of times and put it into our 2d Space.
+  //
   try x = tensor.from_floats(of: times, into: d2)
 
   let announce = function.compose(string.inspect, io.println)
@@ -78,14 +103,23 @@ pub fn announce_winner(
   announce("Trial times per horse")
   tensor.print(x)
 
+  // Axes can be referenced by name.
+  //
+  // Here we reduce away the "Trial" Axis to get each horse's mean run time.
+  //
   announce("Mean time per horse")
   let mean_times =
     x
     |> tensor.mean(with: fn(a) { axis.name(a) == "Trial" })
     |> tensor.debug
 
+  // This catch-all function will reduce away all Axes, although at this point
+  // only the "Horse" Axis remains.
+  //
   let all_axes = fn(_) { True }
 
+  // We get a String representation of the minimum mean time.
+  //
   announce("Fastest mean time")
   let time =
     mean_times
@@ -93,6 +127,8 @@ pub fn announce_winner(
     |> tensor.debug
     |> tensor.to_string(return: tensor.Data, wrap_at: 0)
 
+  // And we get an index number, followed by the name of the winning horse.
+  //
   announce("Fastest horse")
   try horse =
     mean_times
@@ -104,6 +140,8 @@ pub fn announce_winner(
     |> list.at(get: horse)
     |> result.replace_error(InvalidData)
 
+  // Finally, we make our announcement!
+  //
   horse <> " wins the day with a mean time of " <> time <> " minutes!"
   |> announce
   |> Ok
