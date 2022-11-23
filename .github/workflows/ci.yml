@@ -41,16 +41,14 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: build/packages
-          key: ${{ runner.os }}-gleam-${{ hashFiles('**/manifest.toml') }}
-          restore-keys: ${{ runner.os }}-gleam-
+          key: ${{ runner.os }}-${{ hashFiles('manifest.toml') }}
 
       - run: rad init
 
       - uses: actions/cache@v3
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-node-
+          key: ${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - run: rad format --check
 
