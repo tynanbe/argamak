@@ -2,7 +2,6 @@ import argamak/axis.{Axes, Axis, Infer}
 import argamak/format.{Float32, Format, Int32}
 import argamak/space.{Space}
 import gleam/bool
-import gleam/function
 import gleam/io
 import gleam/int
 import gleam/iterator
@@ -778,33 +777,29 @@ pub fn broadcast_over(
   let new_axes = space.axes(new_space)
 
   try mapped_axes =
-    x
-    |> axes
-    |> list.map(
-      with: space_map
-      |> function.compose(fn(name) {
-        new_axes
-        |> list.find_map(with: fn(axis) {
-          case axis.name(axis) == name {
-            True ->
-              #(name, axis.size(axis))
-              |> Ok
-            False -> Error(Nil)
-          }
-        })
-        |> result.replace_error(IncompatibleAxes)
-      }),
-    )
-    |> result.all
+    result.all({
+      use axis <- list.map(axes(x))
+      let name = space_map(axis)
+      {
+        use axis <- list.find_map(new_axes)
+        case axis.name(axis) == name {
+          True ->
+            #(name, axis.size(axis))
+            |> Ok
+          False -> Error(Nil)
+        }
+      }
+      |> result.replace_error(IncompatibleAxes)
+    })
   let axis_map = map.from_list(mapped_axes)
 
-  let pre_shape =
-    new_axes
-    |> list.map(with: fn(axis) {
-      axis_map
-      |> map.get(axis.name(axis))
-      |> result.unwrap(or: 1)
-    })
+  // TODO: use higher level functions?
+  let pre_shape = {
+    use axis <- list.map(new_axes)
+    axis_map
+    |> map.get(axis.name(axis))
+    |> result.unwrap(or: 1)
+  }
 
   let shape = space.shape(new_space)
   try native =
@@ -871,13 +866,11 @@ pub fn broadcast_over(
 /// ```
 ///
 pub fn squeeze(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
-  let filter = fn(axis) {
-    case axis.size(axis) {
-      1 -> filter(axis)
-      _else -> False
-    }
+  use axis <- reducible_over_axes(do_squeeze, x, _, Away)
+  case axis.size(axis) {
+    1 -> filter(axis)
+    _else -> False
   }
-  reducible_over_axes(do_squeeze, x, filter, Away)
 }
 
 if erlang {
@@ -3592,6 +3585,23 @@ pub fn in_situ_mean(
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Slicing & Joining Functions            //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+// TODO
+// concat
+// take
+//   take_along_axis
+//   gather
+// reverse
+// slice
+// put_slice
+// split
+// tile
+// stack
+// unstack
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Conversion Functions                   //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
@@ -3924,7 +3934,7 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
       |> list.reverse
   }
 
-  let try_wrap = case column > 0 {
+  let should_wrap = case column > 0 {
     True -> {
       let max_length = column - tab - rank * 2
       let item_length = item_length + 2
@@ -3933,123 +3943,99 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
         [inner_size, ..] -> inner_size
         _else -> 0
       }
-      fn(j, f) {
-        case { j + 1 } % wrap_at {
-          0 if wrap_at < inner_size -> fn() { Ok(f()) }
-          _else -> fn() { Error(Nil) }
-        }
-      }
+      fn(j) { { j + 1 } % wrap_at == 0 && wrap_at < inner_size }
     }
-    False -> fn(_, _) { fn() { Error(Nil) } }
+    False -> fn(_) { False }
   }
 
   let ToStringAcc(builder: init_builder, ..) as to_string_acc =
     ToStringAcc(built: [], builder: string_builder.new())
 
   let xs =
-    xs
-    |> iterator.from_list
-    |> iterator.map(with: fn(x) {
+    iterator.index({
+      use x <- iterator.map(over: iterator.from_list(xs))
       x
       |> string.pad_left(to: item_length, with: " ")
       |> string_builder.from_string
     })
-    |> iterator.index
 
   let [#(_, xs)] =
-    shape
-    |> list.index_fold(
-      from: xs,
-      with: fn(acc, size, i) {
-        let try_build = fn(j, f) {
-          case { j + 1 } % size {
-            0 -> Ok(f())
-            _else -> Error(Nil)
-          }
+    iterator.to_list({
+      use acc, size, i <- list.index_fold(over: shape, from: xs)
+      let should_build = fn(j) { { j + 1 } % size == 0 }
+      let ToStringAcc(built: built, ..) = case i {
+        0 -> {
+          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
+          let #(j, x) = item
+          let builder =
+            string_builder.append_builder(to: acc.builder, suffix: x)
+          let should_build_j = should_build(j)
+          use <- when(
+              should_build_j && rank == 0,
+              then: fn() {
+                ToStringAcc(..acc, built: list.append(acc.built, [builder]))
+              },
+            )
+          use <- when(
+              should_build_j,
+              then: fn() {
+                let builder =
+                  builder
+                  |> string_builder.prepend(prefix: "[")
+                  |> string_builder.append(suffix: "]")
+                ToStringAcc(
+                  built: list.append(acc.built, [builder]),
+                  builder: init_builder,
+                )
+              },
+            )
+          use <- when(
+              should_wrap(j),
+              then: fn() {
+                let indent = string.repeat(" ", times: tab + rank)
+                let builder =
+                  builder
+                  |> string_builder.append(suffix: ",\n")
+                  |> string_builder.append(suffix: indent)
+                ToStringAcc(..acc, builder: builder)
+              },
+            )
+          // else
+          let builder = string_builder.append(to: builder, suffix: ", ")
+          ToStringAcc(..acc, builder: builder)
         }
+        _else -> {
+          use acc, item <- iterator.fold(over: acc, from: to_string_acc)
+          let #(j, x) = item
+          let builder =
+            string_builder.append_builder(to: acc.builder, suffix: x)
+          use <- when(
+              should_build(j),
+              then: fn() {
+                let builder =
+                  builder
+                  |> string_builder.prepend(prefix: "[")
+                  |> string_builder.append(suffix: "]")
+                ToStringAcc(
+                  built: list.append(acc.built, [builder]),
+                  builder: init_builder,
+                )
+              },
+            )
+          // else
+          let indent = string.repeat(" ", times: tab + rank - i)
+          let builder =
+            builder
+            |> string_builder.append(suffix: ",\n")
+            |> string_builder.append(suffix: indent)
+          ToStringAcc(..acc, builder: builder)
+        }
+      }
+      built
+      |> iterator.from_list
+      |> iterator.index
+    })
 
-        let ToStringAcc(built: built, ..) = case i {
-          0 ->
-            acc
-            |> iterator.fold(
-              from: to_string_acc,
-              with: fn(acc, item) {
-                let #(j, x) = item
-                let builder =
-                  string_builder.append_builder(to: acc.builder, suffix: x)
-                j
-                |> try_build(fn() {
-                  case rank {
-                    0 ->
-                      ToStringAcc(
-                        ..acc,
-                        built: list.append(acc.built, [builder]),
-                      )
-                    _else -> {
-                      let builder =
-                        builder
-                        |> string_builder.prepend(prefix: "[")
-                        |> string_builder.append(suffix: "]")
-                      ToStringAcc(
-                        built: list.append(acc.built, [builder]),
-                        builder: init_builder,
-                      )
-                    }
-                  }
-                })
-                |> result.lazy_or(try_wrap(
-                  j,
-                  fn() {
-                    let indent = string.repeat(" ", times: tab + rank)
-                    let builder =
-                      builder
-                      |> string_builder.append(suffix: ",\n")
-                      |> string_builder.append(suffix: indent)
-                    ToStringAcc(..acc, builder: builder)
-                  },
-                ))
-                |> result.lazy_unwrap(or: fn() {
-                  let builder = string_builder.append(to: builder, suffix: ", ")
-                  ToStringAcc(..acc, builder: builder)
-                })
-              },
-            )
-          _else ->
-            acc
-            |> iterator.fold(
-              from: to_string_acc,
-              with: fn(acc, item) {
-                let #(j, x) = item
-                let builder =
-                  string_builder.append_builder(to: acc.builder, suffix: x)
-                j
-                |> try_build(fn() {
-                  let builder =
-                    builder
-                    |> string_builder.prepend(prefix: "[")
-                    |> string_builder.append(suffix: "]")
-                  ToStringAcc(
-                    built: list.append(acc.built, [builder]),
-                    builder: init_builder,
-                  )
-                })
-                |> result.lazy_unwrap(or: fn() {
-                  let indent = string.repeat(" ", times: tab + rank - i)
-                  let builder =
-                    builder
-                    |> string_builder.append(suffix: ",\n")
-                    |> string_builder.append(suffix: indent)
-                  ToStringAcc(..acc, builder: builder)
-                })
-              },
-            )
-        }
-        built
-        |> iterator.from_list
-        |> iterator.index
-      },
-    )
-    |> iterator.to_list
   let indent = string.repeat(" ", times: tab)
   xs
   |> string_builder.prepend(prefix: indent)
@@ -4220,31 +4206,27 @@ type FitAcc(axis) {
 ///
 fn fit(x: Tensor(a)) -> TensorResult(a) {
   let dividend = size(x)
-  let FitAcc(divisor: divisor, fit_by: fit_by) =
-    x
-    |> axes
-    |> list.fold(
-      from: FitAcc(divisor: 1, fit_by: Definition),
-      with: fn(acc, axis) {
-        case axis {
-          Infer(_) -> FitAcc(..acc, fit_by: Inference)
-          _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
-        }
-      },
-    )
+  let FitAcc(divisor: divisor, fit_by: fit_by) = {
+    use
+      acc,
+      axis
+    <- list.fold(over: axes(x), from: FitAcc(divisor: 1, fit_by: Definition))
+    case axis {
+      Infer(_) -> FitAcc(..acc, fit_by: Inference)
+      _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
+    }
+  }
 
   case dividend % divisor {
     0 if fit_by == Definition -> Ok(x)
     0 if fit_by == Inference -> {
-      assert Ok(space) =
-        x
-        |> space
-        |> space.map(with: fn(axis) {
-          case axis {
-            Infer(_) -> axis.resize(axis, dividend / divisor)
-            _else -> axis
-          }
-        })
+      assert Ok(space) = {
+        use axis <- space.map(space(x))
+        case axis {
+          Infer(_) -> axis.resize(axis, dividend / divisor)
+          _else -> axis
+        }
+      }
       Tensor(..x, space: space)
       |> Ok
     }
@@ -4318,25 +4300,21 @@ fn reducible_over_axes(
   filter: fn(Axis) -> Bool,
   reduce: Reducible,
 ) -> Tensor(a) {
-  let acc =
-    x
-    |> axes
-    |> list.index_fold(
-      from: ReducibleAcc([], []),
-      with: fn(acc, axis, index) {
-        case filter(axis) {
-          True if reduce == InSitu -> {
-            let axis = axis.resize(axis, 1)
-            ReducibleAcc(
-              axes: [axis, ..acc.axes],
-              indices: [index, ..acc.indices],
-            )
-          }
-          True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
-          False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-        }
-      },
-    )
+  let acc = {
+    use
+      acc,
+      axis,
+      index
+    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    case filter(axis) {
+      True if reduce == InSitu -> {
+        let axis = axis.resize(axis, 1)
+        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index, ..acc.indices])
+      }
+      True -> ReducibleAcc(..acc, indices: [index, ..acc.indices])
+      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+    }
+  }
   assert Ok(new_space) =
     acc.axes
     |> list.reverse
@@ -4369,22 +4347,21 @@ fn reducible_over_axis(
   find: fn(Axis) -> Bool,
   reduce: Reducible,
 ) -> Tensor(a) {
-  let acc =
-    x
-    |> axes
-    |> list.index_fold(
-      from: ReducibleAcc([], []),
-      with: fn(acc, axis, index) {
-        case acc.indices == [] && find(axis) {
-          True if reduce == InSitu -> {
-            let axis = axis.resize(axis, 1)
-            ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
-          }
-          True -> ReducibleAcc(..acc, indices: [index])
-          False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
-        }
-      },
-    )
+  let acc = {
+    use
+      acc,
+      axis,
+      index
+    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    case acc.indices == [] && find(axis) {
+      True if reduce == InSitu -> {
+        let axis = axis.resize(axis, 1)
+        ReducibleAcc(axes: [axis, ..acc.axes], indices: [index])
+      }
+      True -> ReducibleAcc(..acc, indices: [index])
+      False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
+    }
+  }
   assert Ok(new_space) =
     acc.axes
     |> list.reverse
@@ -4414,5 +4391,12 @@ fn int_to_bool(x) {
   case x {
     0 -> False
     _else -> True
+  }
+}
+
+fn when(condition: Bool, then f: fn() -> a, else g: fn() -> a) -> a {
+  case condition {
+    True -> f()
+    False -> g()
   }
 }
