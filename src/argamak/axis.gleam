@@ -144,7 +144,7 @@ pub fn rename(x: Axis, name: String) -> Axis {
     Infer(_) -> True
     _else -> False
   }
-  case name {
+  let x = case name {
     "A" -> A
     "B" -> B
     "C" -> C
@@ -173,9 +173,8 @@ pub fn rename(x: Axis, name: String) -> Axis {
     "Z" -> Z
     _else if is_infer -> fn(_) { Infer(name) }
     _else -> Axis(name: name, size: _)
-  }(
-    size,
-  )
+  }
+  x(size)
 }
 
 /// Changes the `size` of the given `Axis`.
@@ -204,7 +203,7 @@ pub fn rename(x: Axis, name: String) -> Axis {
 /// ```
 ///
 pub fn resize(x: Axis, size: Int) -> Axis {
-  case name(x) {
+  let x = case name(x) {
     "A" -> A
     "B" -> B
     "C" -> C
@@ -232,7 +231,6 @@ pub fn resize(x: Axis, size: Int) -> Axis {
     "Y" -> Y
     "Z" -> Z
     name -> Axis(name: name, size: _)
-  }(
-    size,
-  )
+  }
+  x(size)
 }

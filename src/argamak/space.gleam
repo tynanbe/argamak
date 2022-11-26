@@ -401,23 +401,20 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
 /// ```
 ///
 pub fn to_string(x: Space) -> String {
-  let axes =
-    x
-    |> axes
-    |> list.map(with: fn(x) {
-      let name = axis.name(x)
-      let size =
-        x
-        |> axis.size
-        |> int.to_string
-      case x {
-        Axis(..) -> "Axis(\"" <> name <> "\", " <> size <> ")"
-        Infer(_) -> "Infer(\"" <> name <> "\")"
-        _else -> name <> "(" <> size <> ")"
-      }
-    })
-    |> string.join(with: ", ")
-  "Space(" <> axes <> ")"
+  let axes = {
+    use x <- list.map(axes(x))
+    let name = axis.name(x)
+    let size =
+      x
+      |> axis.size
+      |> int.to_string
+    case x {
+      Axis(..) -> "Axis(\"" <> name <> "\", " <> size <> ")"
+      Infer(_) -> "Infer(\"" <> name <> "\")"
+      _else -> name <> "(" <> size <> ")"
+    }
+  }
+  "Space(" <> string.join(axes, with: ", ") <> ")"
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -455,44 +452,39 @@ pub fn to_string(x: Space) -> String {
 /// ```
 ///
 fn validate(space: Space) -> SpaceResult {
-  let ValidateAcc(_, _, results: results) =
-    space
-    |> axes
-    |> list.fold(
-      from: ValidateAcc(names: [], inferred: False, results: []),
-      with: fn(acc: ValidateAcc, axis) {
-        let name = axis.name(axis)
-        let size = axis.size(axis)
-        let errors =
-          [
-            Invalid(
-              error: DuplicateName,
-              when: list.contains(acc.names, any: name),
-            ),
-            Invalid(
-              error: CannotInfer,
-              when: acc.inferred && axis == Infer(name),
-            ),
-            Invalid(error: InvalidSize, when: size < 1 && axis != Infer(name)),
-          ]
-          |> list.map(with: fn(invalid: Invalid) {
-            case invalid.when {
-              False -> []
-              True -> [SpaceError(reason: invalid.error, axes: [axis])]
-            }
-          })
-          |> list.flatten
-        let result = case errors {
-          [] -> Ok(axis)
-          _else -> Error(errors)
+  let ValidateAcc(_, _, results: results) = {
+    use
+      acc,
+      axis
+    <- list.fold(
+        over: axes(space),
+        from: ValidateAcc(names: [], inferred: False, results: []),
+      )
+    let name = axis.name(axis)
+    let size = axis.size(axis)
+    let errors =
+      [
+        Invalid(error: DuplicateName, when: list.contains(acc.names, any: name)),
+        Invalid(error: CannotInfer, when: acc.inferred && axis == Infer(name)),
+        Invalid(error: InvalidSize, when: size < 1 && axis != Infer(name)),
+      ]
+      |> list.map(with: fn(invalid) {
+        case invalid.when {
+          False -> []
+          True -> [SpaceError(reason: invalid.error, axes: [axis])]
         }
-        ValidateAcc(
-          names: [name, ..acc.names],
-          inferred: acc.inferred || axis == Infer(name),
-          results: [result, ..acc.results],
-        )
-      },
+      })
+      |> list.flatten
+    let result = case errors {
+      [] -> Ok(axis)
+      _else -> Error(errors)
+    }
+    ValidateAcc(
+      names: [name, ..acc.names],
+      inferred: acc.inferred || axis == Infer(name),
+      results: [result, ..acc.results],
     )
+  }
 
   case list.any(in: results, satisfying: result.is_error) {
     False -> Ok(space)
