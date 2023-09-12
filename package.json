@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "@tensorflow/tfjs-node": "^3.20.0"
+    "@tensorflow/tfjs-node": "^4.10.0"
   }
 }

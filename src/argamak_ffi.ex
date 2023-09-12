@@ -80,7 +80,7 @@ defmodule :argamak_ffi do
 
   def remainder(a, b), do: fn -> Nx.remainder(a, b) end |> broadcast_result
 
-  def power(a, b), do: fn -> Nx.power(a, b) end |> broadcast_result
+  def power(a, b), do: fn -> Nx.pow(a, b) end |> broadcast_result
 
   def max(a, b), do: fn -> Nx.max(a, b) end |> broadcast_result
 
@@ -131,6 +131,12 @@ defmodule :argamak_ffi do
   def product(x, i), do: Nx.product(x, axes: i) |> clip_reformat(like: x)
 
   def mean(x, i), do: Nx.mean(x, axes: i) |> reformat(like: x)
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+  # Tensor Slicing & Joining Functions     #
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+  def concat(xs, i), do: Nx.concatenate(xs, axis: i)
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
   # Tensor Conversion Functions            #

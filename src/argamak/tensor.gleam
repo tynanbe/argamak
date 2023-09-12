@@ -19,7 +19,7 @@ pub opaque type Tensor(a) {
 
 /// A type for `Native` tensor representations.
 ///
-pub external type Native
+pub type Native
 
 /// When a tensor operation cannot succeed.
 ///
@@ -67,7 +67,7 @@ type Shape =
 /// ```
 ///
 pub fn from_float(x: Float) -> Tensor(Float32) {
-  assert Ok(x) = tensor(from: x, into: space.new(), with: format.float32())
+  let assert Ok(x) = tensor(from: x, into: space.new(), with: format.float32())
   x
 }
 
@@ -82,7 +82,7 @@ pub fn from_float(x: Float) -> Tensor(Float32) {
 /// ```
 ///
 pub fn from_int(x: Int) -> Tensor(Int32) {
-  assert Ok(x) = tensor(from: x, into: space.new(), with: format.int32())
+  let assert Ok(x) = tensor(from: x, into: space.new(), with: format.int32())
   x
 }
 
@@ -103,7 +103,7 @@ pub fn from_int(x: Int) -> Tensor(Int32) {
 /// ```
 ///
 pub fn from_bool(x: Bool) -> Tensor(Int32) {
-  assert Ok(x) =
+  let assert Ok(x) =
     x
     |> bool.to_int
     |> tensor(into: space.new(), with: format.int32())
@@ -122,8 +122,8 @@ pub fn from_bool(x: Bool) -> Tensor(Int32) {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0], into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -132,8 +132,8 @@ pub fn from_bool(x: Bool) -> Tensor(Int32) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -143,9 +143,9 @@ pub fn from_bool(x: Bool) -> Tensor(Int32) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
 /// > let xs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-/// > assert Ok(x) = from_floats(of: xs, into: d3)
+/// > let assert Ok(x) = from_floats(of: xs, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -177,8 +177,8 @@ pub fn from_floats(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1], into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -187,8 +187,8 @@ pub fn from_floats(
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -198,9 +198,9 @@ pub fn from_floats(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
 /// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > let assert Ok(x) = from_ints(of: xs, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -231,8 +231,8 @@ pub fn from_ints(of xs: List(Int), into space: Space) -> TensorResult(Int32) {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_bools(of: [True], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_bools(of: [True], into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -241,8 +241,8 @@ pub fn from_ints(of xs: List(Int), into space: Space) -> TensorResult(Int32) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_bools(of: [True, False, True, True], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_bools(of: [True, False, True, True], into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -252,9 +252,9 @@ pub fn from_ints(of xs: List(Int), into space: Space) -> TensorResult(Int32) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
 /// > let xs = [True, False, True, False, False, True, False, True]
-/// > assert Ok(x) = from_bools(of: xs, into: d3)
+/// > let assert Ok(x) = from_bools(of: xs, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -283,11 +283,11 @@ pub fn from_bools(of xs: List(Bool), into space: Space) -> TensorResult(Int32) {
 /// > import argamak/format
 /// > import argamak/space
 /// > import gleam/dynamic.{Dynamic}
-/// > external fn erlang_tensor(Dynamic) -> Native =
-/// >   "Elixir.Nx" "tensor"
+/// > @external(erlang, "Elixir.Nx", "tensor")
+/// > fn erlang_tensor(data: Dynamic) -> Native
 /// > let native = erlang_tensor(dynamic.from([[1, 2], [3, 4]]))
-/// > assert Ok(d2) = space.d2(X(2), Infer("Y"))
-/// > assert Ok(x) = from_native(of: native, into: d2, with: format.int32)
+/// > let assert Ok(d2) = space.d2(X(2), Infer("Y"))
+/// > let assert Ok(x) = from_native(of: native, into: d2, with: format.int32)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -324,8 +324,8 @@ pub fn from_native(
 ///
 /// > import argamak/axis.{Infer}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
 /// > format(x)
 /// format.int32()
 /// ```
@@ -344,13 +344,13 @@ pub fn format(x: Tensor(a)) -> Format(a) {
 /// > space(from_float(0.0)) |> space.axes
 /// []
 ///
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
 /// > space(x) |> space.axes
 /// [X(3)]
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > let assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
 /// > space(x) |> space.axes
 /// [X(2), Y(2), Z(2)]
 /// ```
@@ -369,13 +369,13 @@ pub fn space(x: Tensor(a)) -> Space {
 ///
 /// > import argamak/axis.{Axis, X}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
 /// > axes(x)
 /// [X(3)]
 ///
-/// > assert Ok(d2) = space.d2(Axis("Alpha", 1), Axis("Omega", 3))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
+/// > let assert Ok(d2) = space.d2(Axis("Alpha", 1), Axis("Omega", 3))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
 /// > axes(x)
 /// [Axis("Alpha", 1), Axis("Omega", 3)]
 /// ```
@@ -397,13 +397,13 @@ pub fn axes(x: Tensor(a)) -> Axes {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
 /// > rank(x)
 /// 1
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > let assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
 /// > rank(x)
 /// 3
 /// ```
@@ -424,13 +424,13 @@ pub fn rank(x: Tensor(a)) -> Int {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
 /// > shape(x)
 /// [3]
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
+/// > let assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6, 7, 8], into: d3)
 /// > shape(x)
 /// [2, 2, 2]
 /// ```
@@ -451,13 +451,13 @@ pub fn shape(x: Tensor(a)) -> Shape {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d1)
 /// > size(x)
 /// 3
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
-/// > assert Ok(x) = from_ints(of: [0, 1, 2, 3, 4, 5, 6, 7], into: d3)
+/// > let assert Ok(d3) = space.d3(X(2), Y(2), Z(2))
+/// > let assert Ok(x) = from_ints(of: [0, 1, 2, 3, 4, 5, 6, 7], into: d3)
 /// > size(x)
 /// 8
 /// ```
@@ -469,15 +469,9 @@ pub fn size(x: Tensor(a)) -> Int {
   |> do_size
 }
 
-if erlang {
-  external fn do_size(Native) -> Int =
-    "argamak_ffi" "size"
-}
-
-if javascript {
-  external fn do_size(Native) -> Int =
-    "../argamak_ffi.mjs" "size"
-}
+@external(erlang, "argamak_ffi", "size")
+@external(javascript, "../argamak_ffi.mjs", "size")
+fn do_size(x: Native) -> Int
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Transformation Functions               //
@@ -506,8 +500,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
 /// > reformat(x, apply: format.int32()) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -524,15 +518,9 @@ pub fn reformat(x: Tensor(a), apply format: Format(b)) -> Tensor(b) {
   |> Tensor(format: format, space: space(x))
 }
 
-if erlang {
-  external fn do_reformat(Native, format.Native) -> Native =
-    "argamak_ffi" "reformat"
-}
-
-if javascript {
-  external fn do_reformat(Native, format.Native) -> Native =
-    "../argamak_ffi.mjs" "reformat"
-}
+@external(erlang, "argamak_ffi", "reformat")
+@external(javascript, "../argamak_ffi.mjs", "reformat")
+fn do_reformat(x: Native, format: format.Native) -> Native
 
 /// Results in a `Tensor` placed into a given `Space` on success, or a
 /// `TensorError` on failure.
@@ -545,8 +533,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = reshape(put: from_float(1.0), into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = reshape(put: from_float(1.0), into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -555,10 +543,10 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d1)
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = reshape(put: x, into: d2)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0, 4.0], into: d1)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = reshape(put: x, into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -568,11 +556,11 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(X(2), Infer("Y"))
+/// > let assert Ok(d2) = space.d2(X(2), Infer("Y"))
 /// > let xs = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-/// > assert Ok(x) = from_floats(of: xs, into: d2)
-/// > assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
-/// > assert Ok(x) = reshape(put: x, into: d3)
+/// > let assert Ok(x) = from_floats(of: xs, into: d2)
+/// > let assert Ok(d3) = space.d3(Infer("X"), Y(2), Z(2))
+/// > let assert Ok(x) = reshape(put: x, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -584,9 +572,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Y(1), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.0], into: d3)
-/// > assert Ok(x) = reshape(put: x, into: space.new())
+/// > let assert Ok(d3) = space.d3(X(1), Y(1), Z(1))
+/// > let assert Ok(x) = from_floats(of: [1.0], into: d3)
+/// > let assert Ok(x) = reshape(put: x, into: space.new())
 /// > print_data(x)
 /// 1.0
 /// Nil
@@ -596,27 +584,23 @@ if javascript {
 /// ```
 ///
 pub fn reshape(put x: Tensor(a), into new_space: Space) -> TensorResult(a) {
-  try x =
+  use x <- result.try(
     Tensor(..x, space: new_space)
-    |> fit
+    |> fit,
+  )
   let shape = shape(x)
-  try native =
+  use native <- result.try(
     x
     |> to_native
-    |> do_reshape(shape)
+    |> do_reshape(shape),
+  )
   Tensor(..x, data: native)
   |> Ok
 }
 
-if erlang {
-  external fn do_reshape(Native, Shape) -> NativeResult =
-    "argamak_ffi" "reshape"
-}
-
-if javascript {
-  external fn do_reshape(Native, Shape) -> NativeResult =
-    "../argamak_ffi.mjs" "reshape"
-}
+@external(erlang, "argamak_ffi", "reshape")
+@external(javascript, "../argamak_ffi.mjs", "reshape")
+fn do_reshape(x: Native, shape: Shape) -> NativeResult
 
 /// Results in a `Tensor` broadcast into a given `Space` on success, or a
 /// `TensorError` on failure.
@@ -634,8 +618,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(X(3))
-/// > assert Ok(x) = broadcast(from: from_int(0), into: d1)
+/// > let assert Ok(d1) = space.d1(X(3))
+/// > let assert Ok(x) = broadcast(from: from_int(0), into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -644,10 +628,10 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(d1) = space.d1(Infer("X"))
 /// > let x = from_ints(of: [-1], into: d1)
-/// > assert Ok(d1) = space.d1(Y(5))
-/// > assert Ok(x) = broadcast(from: x, into: d1)
+/// > let assert Ok(d1) = space.d1(Y(5))
+/// > let assert Ok(x) = broadcast(from: x, into: d1)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -656,10 +640,10 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
-/// > assert Ok(d2) = space.d2(X(2), Y(3))
-/// > assert Ok(x) = broadcast(from: x, into: d2)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
+/// > let assert Ok(d2) = space.d2(X(2), Y(3))
+/// > let assert Ok(x) = broadcast(from: x, into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -669,29 +653,24 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
+/// > let assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
 /// > broadcast(from: x, into: d3)
 /// Error(IncompatibleShape)
 /// ```
 ///
 pub fn broadcast(from x: Tensor(a), into new_space: Space) -> TensorResult(a) {
-  try native =
+  use native <- result.try(
     x
     |> to_native
-    |> do_broadcast(space.shape(new_space))
+    |> do_broadcast(space.shape(new_space)),
+  )
   Tensor(..x, data: native, space: new_space)
   |> Ok
 }
 
-if erlang {
-  external fn do_broadcast(Native, Shape) -> NativeResult =
-    "argamak_ffi" "broadcast"
-}
-
-if javascript {
-  external fn do_broadcast(Native, Shape) -> NativeResult =
-    "../argamak_ffi.mjs" "broadcast"
-}
+@external(erlang, "argamak_ffi", "broadcast")
+@external(javascript, "../argamak_ffi.mjs", "broadcast")
+fn do_broadcast(x: Native, shape: Shape) -> NativeResult
 
 /// A variant of `broadcast` that maps the given `Tensor`'s current `Axes` to
 /// arbitrary counterparts in the new `Space`.
@@ -707,10 +686,10 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
-/// > assert Ok(d2) = space.d2(X(3), Y(2))
-/// > assert Ok(y) = broadcast_over(from: x, into: d2, with: fn(_) { "X" })
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d1)
+/// > let assert Ok(d2) = space.d2(X(3), Y(2))
+/// > let assert Ok(y) = broadcast_over(from: x, into: d2, with: fn(_) { "X" })
 /// > print(y)
 /// Tensor(
 ///   Format(Float32),
@@ -721,9 +700,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6], into: d2)
-/// > assert Ok(d3) = space.d3(X(3), Y(2), Z(2))
-/// > assert Ok(y) = broadcast_over(
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4, 5, 6], into: d2)
+/// > let assert Ok(d3) = space.d3(X(3), Y(2), Z(2))
+/// > let assert Ok(y) = broadcast_over(
 ///     from: x,
 ///     into: d3,
 ///     with: fn(a) {
@@ -746,7 +725,7 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(y) = broadcast_over(
+/// > let assert Ok(y) = broadcast_over(
 ///     from: x,
 ///     into: d3,
 ///     with: axis.name,
@@ -764,7 +743,7 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
+/// > let assert Ok(d3) = space.d3(X(2), Y(3), Infer("Z"))
 /// > broadcast_over(from: x, into: d3, with: axis.name)
 /// Error(IncompatibleShape)
 /// ```
@@ -776,21 +755,20 @@ pub fn broadcast_over(
 ) -> TensorResult(a) {
   let new_axes = space.axes(new_space)
 
-  try mapped_axes =
-    result.all({
-      use axis <- list.map(axes(x))
-      let name = space_map(axis)
-      {
-        use axis <- list.find_map(new_axes)
-        case axis.name(axis) == name {
-          True ->
-            #(name, axis.size(axis))
-            |> Ok
-          False -> Error(Nil)
-        }
+  use mapped_axes <- result.try(result.all({
+    use axis <- list.map(axes(x))
+    let name = space_map(axis)
+    {
+      use axis <- list.find_map(new_axes)
+      case axis.name(axis) == name {
+        True ->
+          #(name, axis.size(axis))
+          |> Ok
+        False -> Error(Nil)
       }
-      |> result.replace_error(IncompatibleAxes)
-    })
+    }
+    |> result.replace_error(IncompatibleAxes)
+  }))
   let axis_map = map.from_list(mapped_axes)
 
   // TODO: use higher level functions?
@@ -802,11 +780,12 @@ pub fn broadcast_over(
   }
 
   let shape = space.shape(new_space)
-  try native =
+  use native <- result.try(
     x
     |> to_native
-    |> do_reshape(pre_shape)
-  try native = do_broadcast(native, shape)
+    |> do_reshape(pre_shape),
+  )
+  use native <- result.try(do_broadcast(native, shape))
   Tensor(..x, data: native, space: new_space)
   |> Ok
 }
@@ -828,8 +807,8 @@ pub fn broadcast_over(
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [3], into: d1)
 /// > squeeze(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -846,8 +825,8 @@ pub fn broadcast_over(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [1, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [1, 2], into: d3)
 /// > squeeze(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -873,15 +852,9 @@ pub fn squeeze(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   }
 }
 
-if erlang {
-  external fn do_squeeze(Native, Indices) -> Native =
-    "argamak_ffi" "squeeze"
-}
-
-if javascript {
-  external fn do_squeeze(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "squeeze"
-}
+@external(erlang, "argamak_ffi", "squeeze")
+@external(javascript, "../argamak_ffi.mjs", "squeeze")
+fn do_squeeze(x: Native, indices: Indices) -> Native
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Logical Functions                      //
@@ -897,9 +870,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = equal(is: a, to: from_int(4))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = equal(is: a, to: from_int(4))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -908,9 +881,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = equal(is: a, to: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = equal(is: a, to: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -920,16 +893,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > equal(is: b, to: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > equal(is: b, to: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -938,15 +911,9 @@ pub fn equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_equal, a, b)
 }
 
-if erlang {
-  external fn do_equal(Native, Native) -> NativeResult =
-    "argamak_ffi" "equal"
-}
-
-if javascript {
-  external fn do_equal(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "equal"
-}
+@external(erlang, "argamak_ffi", "equal")
+@external(javascript, "../argamak_ffi.mjs", "equal")
+fn do_equal(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -958,9 +925,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = not_equal(is: a, to: from_int(4))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = not_equal(is: a, to: from_int(4))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -969,9 +936,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = not_equal(is: a, to: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = not_equal(is: a, to: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -981,16 +948,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > not_equal(is: b, to: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > not_equal(is: b, to: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -999,15 +966,9 @@ pub fn not_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_not_equal, a, b)
 }
 
-if erlang {
-  external fn do_not_equal(Native, Native) -> NativeResult =
-    "argamak_ffi" "not_equal"
-}
-
-if javascript {
-  external fn do_not_equal(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "not_equal"
-}
+@external(erlang, "argamak_ffi", "not_equal")
+@external(javascript, "../argamak_ffi.mjs", "not_equal")
+fn do_not_equal(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1020,9 +981,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = greater(is: a, than: from_int(4))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = greater(is: a, than: from_int(4))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1031,9 +992,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = greater(is: a, than: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = greater(is: a, than: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1043,16 +1004,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > greater(is: b, than: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > greater(is: b, than: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1061,15 +1022,9 @@ pub fn greater(is a: Tensor(a), than b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_greater, a, b)
 }
 
-if erlang {
-  external fn do_greater(Native, Native) -> NativeResult =
-    "argamak_ffi" "greater"
-}
-
-if javascript {
-  external fn do_greater(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "greater"
-}
+@external(erlang, "argamak_ffi", "greater")
+@external(javascript, "../argamak_ffi.mjs", "greater")
+fn do_greater(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1082,9 +1037,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = greater_or_equal(is: a, to: from_int(4))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = greater_or_equal(is: a, to: from_int(4))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1093,9 +1048,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = greater_or_equal(is: a, to: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = greater_or_equal(is: a, to: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1105,16 +1060,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > greater_or_equal(is: b, to: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > greater_or_equal(is: b, to: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1123,15 +1078,9 @@ pub fn greater_or_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_greater_or_equal, a, b)
 }
 
-if erlang {
-  external fn do_greater_or_equal(Native, Native) -> NativeResult =
-    "argamak_ffi" "greater_or_equal"
-}
-
-if javascript {
-  external fn do_greater_or_equal(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "greater_or_equal"
-}
+@external(erlang, "argamak_ffi", "greater_or_equal")
+@external(javascript, "../argamak_ffi.mjs", "greater_or_equal")
+fn do_greater_or_equal(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1144,9 +1093,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = less(is: a, than: from_int(5))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = less(is: a, than: from_int(5))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1155,9 +1104,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = less(is: a, than: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = less(is: a, than: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1167,16 +1116,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > less(is: b, than: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > less(is: b, than: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1185,15 +1134,9 @@ pub fn less(is a: Tensor(a), than b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_less, a, b)
 }
 
-if erlang {
-  external fn do_less(Native, Native) -> NativeResult =
-    "argamak_ffi" "less"
-}
-
-if javascript {
-  external fn do_less(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "less"
-}
+@external(erlang, "argamak_ffi", "less")
+@external(javascript, "../argamak_ffi.mjs", "less")
+fn do_less(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1206,9 +1149,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [5, 4], into: d1)
-/// > assert Ok(x) = less_or_equal(is: a, to: from_int(5))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [5, 4], into: d1)
+/// > let assert Ok(x) = less_or_equal(is: a, to: from_int(5))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1217,9 +1160,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
-/// > assert Ok(x) = less_or_equal(is: a, to: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [4, 4, 5, 5], into: d2)
+/// > let assert Ok(x) = less_or_equal(is: a, to: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1229,16 +1172,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 6], into: d3)
 /// > less_or_equal(is: b, to: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > less_or_equal(is: b, to: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1247,15 +1190,9 @@ pub fn less_or_equal(is a: Tensor(a), to b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_less_or_equal, a, b)
 }
 
-if erlang {
-  external fn do_less_or_equal(Native, Native) -> NativeResult =
-    "argamak_ffi" "less_or_equal"
-}
-
-if javascript {
-  external fn do_less_or_equal(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "less_or_equal"
-}
+@external(erlang, "argamak_ffi", "less_or_equal")
+@external(javascript, "../argamak_ffi.mjs", "less_or_equal")
+fn do_less_or_equal(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1268,9 +1205,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
-/// > assert Ok(x) = logical_and(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > let assert Ok(x) = logical_and(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1279,9 +1216,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
-/// > assert Ok(x) = logical_and(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > let assert Ok(x) = logical_and(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1291,16 +1228,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_and(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > logical_and(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1309,15 +1246,9 @@ pub fn logical_and(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_logical_and, a, b)
 }
 
-if erlang {
-  external fn do_logical_and(Native, Native) -> NativeResult =
-    "argamak_ffi" "logical_and"
-}
-
-if javascript {
-  external fn do_logical_and(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "logical_and"
-}
+@external(erlang, "argamak_ffi", "logical_and")
+@external(javascript, "../argamak_ffi.mjs", "logical_and")
+fn do_logical_and(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1330,9 +1261,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
-/// > assert Ok(x) = logical_or(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > let assert Ok(x) = logical_or(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1341,9 +1272,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
-/// > assert Ok(x) = logical_or(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > let assert Ok(x) = logical_or(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1353,16 +1284,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_or(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > logical_or(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1371,15 +1302,9 @@ pub fn logical_or(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_logical_or, a, b)
 }
 
-if erlang {
-  external fn do_logical_or(Native, Native) -> NativeResult =
-    "argamak_ffi" "logical_or"
-}
-
-if javascript {
-  external fn do_logical_or(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "logical_or"
-}
+@external(erlang, "argamak_ffi", "logical_or")
+@external(javascript, "../argamak_ffi.mjs", "logical_or")
+fn do_logical_or(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise comparison of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1392,9 +1317,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [9, 0], into: d1)
-/// > assert Ok(x) = logical_xor(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [9, 0], into: d1)
+/// > let assert Ok(x) = logical_xor(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1403,9 +1328,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
-/// > assert Ok(x) = logical_xor(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > let assert Ok(x) = logical_xor(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1415,16 +1340,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > logical_xor(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > logical_xor(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1433,15 +1358,9 @@ pub fn logical_xor(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_logical_xor, a, b)
 }
 
-if erlang {
-  external fn do_logical_xor(Native, Native) -> NativeResult =
-    "argamak_ffi" "logical_xor"
-}
-
-if javascript {
-  external fn do_logical_xor(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "logical_xor"
-}
+@external(erlang, "argamak_ffi", "logical_xor")
+@external(javascript, "../argamak_ffi.mjs", "logical_xor")
+fn do_logical_xor(a: Native, b: Native) -> NativeResult
 
 /// Returns the element-wise logical opposite of the given `Tensor`.
 ///
@@ -1462,8 +1381,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.3], into: d1)
 /// > logical_not(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -1472,8 +1391,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
 /// > logical_not(x) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -1489,15 +1408,9 @@ pub fn logical_not(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_logical_not(to_native(x)))
 }
 
-if erlang {
-  external fn do_logical_not(Native) -> Native =
-    "argamak_ffi" "logical_not"
-}
-
-if javascript {
-  external fn do_logical_not(Native) -> Native =
-    "../argamak_ffi.mjs" "logical_not"
-}
+@external(erlang, "argamak_ffi", "logical_not")
+@external(javascript, "../argamak_ffi.mjs", "logical_not")
+fn do_logical_not(x: Native) -> Native
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Arithmetic Functions                   //
@@ -1511,9 +1424,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [0, 9], into: d1)
-/// > assert Ok(x) = add(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [0, 9], into: d1)
+/// > let assert Ok(x) = add(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1522,9 +1435,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
-/// > assert Ok(x) = add(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > let assert Ok(x) = add(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1534,16 +1447,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > add(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > add(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1552,15 +1465,9 @@ pub fn add(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_add, a, b)
 }
 
-if erlang {
-  external fn do_add(Native, Native) -> NativeResult =
-    "argamak_ffi" "add"
-}
-
-if javascript {
-  external fn do_add(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "add"
-}
+@external(erlang, "argamak_ffi", "add")
+@external(javascript, "../argamak_ffi.mjs", "add")
+fn do_add(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise subtraction of one `Tensor`
 /// from another on success (broadcast as needed), or a `TensorError` on
@@ -1571,9 +1478,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [0, 9], into: d1)
-/// > assert Ok(x) = subtract(from: a, value: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [0, 9], into: d1)
+/// > let assert Ok(x) = subtract(from: a, value: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1582,9 +1489,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
-/// > assert Ok(x) = subtract(from: a, value: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 0], into: d2)
+/// > let assert Ok(x) = subtract(from: a, value: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1594,16 +1501,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > subtract(from: b, value: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > subtract(from: b, value: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1612,15 +1519,9 @@ pub fn subtract(from a: Tensor(a), value b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_subtract, a, b)
 }
 
-if erlang {
-  external fn do_subtract(Native, Native) -> NativeResult =
-    "argamak_ffi" "subtract"
-}
-
-if javascript {
-  external fn do_subtract(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "subtract"
-}
+@external(erlang, "argamak_ffi", "subtract")
+@external(javascript, "../argamak_ffi.mjs", "subtract")
+fn do_subtract(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise multiplication of the given
 /// tensors on success (broadcast as needed), or a `TensorError` on failure.
@@ -1630,9 +1531,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = multiply(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = multiply(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1641,9 +1542,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
-/// > assert Ok(x) = multiply(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > let assert Ok(x) = multiply(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1653,16 +1554,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > multiply(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > multiply(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1671,15 +1572,9 @@ pub fn multiply(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_multiply, a, b)
 }
 
-if erlang {
-  external fn do_multiply(Native, Native) -> NativeResult =
-    "argamak_ffi" "multiply"
-}
-
-if javascript {
-  external fn do_multiply(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "multiply"
-}
+@external(erlang, "argamak_ffi", "multiply")
+@external(javascript, "../argamak_ffi.mjs", "multiply")
+fn do_multiply(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise division of one `Tensor` by
 /// another on success (broadcast as needed), or a `TensorError` on failure.
@@ -1691,9 +1586,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = divide(from: a, by: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = divide(from: a, by: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1703,9 +1598,9 @@ if javascript {
 /// Nil
 ///
 /// > let a = reformat(a, apply: format.float32())
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_floats(of: [0.0, 4.0, 5.0, 9.0], into: d2)
-/// > assert Ok(x) = divide(from: a, by: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_floats(of: [0.0, 4.0, 5.0, 9.0], into: d2)
+/// > let assert Ok(x) = divide(from: a, by: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -1715,16 +1610,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
 /// > divide(from: b, by: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > divide(from: b, by: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1734,15 +1629,9 @@ pub fn divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
   |> permit_zero(in: b)
 }
 
-if erlang {
-  external fn do_divide(Native, Native) -> NativeResult =
-    "argamak_ffi" "divide"
-}
-
-if javascript {
-  external fn do_divide(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "divide"
-}
+@external(erlang, "argamak_ffi", "divide")
+@external(javascript, "../argamak_ffi.mjs", "divide")
+fn do_divide(a: Native, b: Native) -> NativeResult
 
 /// A variant of `divide` that results in a `TensorError` if any value of the
 /// divisor is zero.
@@ -1752,9 +1641,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = try_divide(from: a, by: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = try_divide(from: a, by: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1763,14 +1652,14 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
 /// > try_divide(from: a, by: b)
 /// Error(ZeroDivision)
 /// ```
 ///
 pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
-  try b = all_nonzero(b)
+  use b <- result.try(all_nonzero(b))
   divide(from: a, by: b)
 }
 
@@ -1785,9 +1674,9 @@ pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [13, -13], into: d1)
-/// > assert Ok(x) = remainder(from: a, divided_by: from_int(0))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [13, -13], into: d1)
+/// > let assert Ok(x) = remainder(from: a, divided_by: from_int(0))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1796,9 +1685,9 @@ pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
-/// > assert Ok(x) = remainder(from: a, divided_by: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
+/// > let assert Ok(x) = remainder(from: a, divided_by: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1808,16 +1697,16 @@ pub fn try_divide(from a: Tensor(a), by b: Tensor(a)) -> TensorResult(a) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > remainder(from: b, divided_by: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > remainder(from: b, divided_by: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1826,23 +1715,22 @@ pub fn remainder(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) 
   do_remainder(a, b)
 }
 
-if erlang {
-  fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
-    broadcastable(erlang_remainder, a, _)
-    |> permit_zero(in: b)
-  }
-
-  external fn erlang_remainder(Native, Native) -> NativeResult =
-    "argamak_ffi" "remainder"
+@target(erlang)
+fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(erlang_remainder, a, _)
+  |> permit_zero(in: b)
 }
 
-if javascript {
-  fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
-    try adjust = sign_not_equal(a, b)
-    try adjust = multiply(adjust, b)
-    try x = modulo(from: a, divided_by: b)
-    subtract(from: x, value: adjust)
-  }
+@target(erlang)
+@external(erlang, "argamak_ffi", "remainder")
+fn erlang_remainder(a: Native, b: Native) -> NativeResult
+
+@target(javascript)
+fn do_remainder(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  use adjust <- result.try(sign_not_equal(a, b))
+  use adjust <- result.try(multiply(adjust, b))
+  use x <- result.try(modulo(from: a, divided_by: b))
+  subtract(from: x, value: adjust)
 }
 
 /// A variant of `remainder` that results in a `TensorError` if any value of the
@@ -1853,9 +1741,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = try_remainder(from: a, divided_by: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = try_remainder(from: a, divided_by: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1864,8 +1752,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
 /// > try_remainder(from: a, divided_by: b)
 /// Error(ZeroDivision)
 /// ```
@@ -1874,7 +1762,7 @@ pub fn try_remainder(
   from a: Tensor(a),
   divided_by b: Tensor(a),
 ) -> TensorResult(a) {
-  try b = all_nonzero(b)
+  use b <- result.try(all_nonzero(b))
   remainder(from: a, divided_by: b)
 }
 
@@ -1889,9 +1777,9 @@ pub fn try_remainder(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [13, -13], into: d1)
-/// > assert Ok(x) = modulo(from: a, divided_by: from_int(0))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [13, -13], into: d1)
+/// > let assert Ok(x) = modulo(from: a, divided_by: from_int(0))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1900,9 +1788,9 @@ pub fn try_remainder(
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
-/// > assert Ok(x) = modulo(from: a, divided_by: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [3, 3, -3, -3], into: d2)
+/// > let assert Ok(x) = modulo(from: a, divided_by: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1912,16 +1800,16 @@ pub fn try_remainder(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > modulo(from: b, divided_by: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > modulo(from: b, divided_by: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -1930,24 +1818,23 @@ pub fn modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) {
   do_modulo(a, b)
 }
 
-if erlang {
-  fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
-    try adjust = sign_not_equal(a, b)
-    try adjust = multiply(adjust, b)
-    try x = remainder(from: a, divided_by: b)
-    add(x, adjust)
-  }
+@target(erlang)
+fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  use adjust <- result.try(sign_not_equal(a, b))
+  use adjust <- result.try(multiply(adjust, b))
+  use x <- result.try(remainder(from: a, divided_by: b))
+  add(x, adjust)
 }
 
-if javascript {
-  fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
-    broadcastable(javascript_modulo, a, _)
-    |> permit_zero(in: b)
-  }
-
-  external fn javascript_modulo(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "modulo"
+@target(javascript)
+fn do_modulo(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
+  broadcastable(javascript_modulo, a, _)
+  |> permit_zero(in: b)
 }
+
+@target(javascript)
+@external(javascript, "../argamak_ffi.mjs", "modulo")
+fn javascript_modulo(a: Native, b: Native) -> NativeResult
 
 /// A variant of `modulo` that results in a `TensorError` if any value of the
 /// divisor is zero.
@@ -1957,9 +1844,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = try_modulo(from: a, divided_by: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = try_modulo(from: a, divided_by: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -1968,14 +1855,14 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, 9], into: d2)
 /// > try_modulo(from: a, divided_by: b)
 /// Error(ZeroDivision)
 /// ```
 ///
 pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a) {
-  try b = all_nonzero(b)
+  use b <- result.try(all_nonzero(b))
   modulo(from: a, divided_by: b)
 }
 
@@ -1988,9 +1875,9 @@ pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a)
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = power(raise: a, to_the: from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = power(raise: a, to_the: from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2000,9 +1887,9 @@ pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a)
 /// Nil
 ///
 /// > let a = reformat(a, apply: format.float32())
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_floats(of: [0.0, 0.4, 0.5, 0.9], into: d2)
-/// > assert Ok(x) = power(raise: a, to_the: b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_floats(of: [0.0, 0.4, 0.5, 0.9], into: d2)
+/// > let assert Ok(x) = power(raise: a, to_the: b)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -2012,16 +1899,16 @@ pub fn try_modulo(from a: Tensor(a), divided_by b: Tensor(a)) -> TensorResult(a)
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_floats(of: [4.0, 5.0, 0.0], into: d3)
 /// > power(raise: b, to_the: c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > power(raise: b, to_the: c)
 /// Error(CannotBroadcast)
 /// ```
@@ -2030,15 +1917,9 @@ pub fn power(raise a: Tensor(a), to_the b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_power, a, b)
 }
 
-if erlang {
-  external fn do_power(Native, Native) -> NativeResult =
-    "argamak_ffi" "power"
-}
-
-if javascript {
-  external fn do_power(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "power"
-}
+@external(erlang, "argamak_ffi", "power")
+@external(javascript, "../argamak_ffi.mjs", "power")
+fn do_power(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise maximum of the given tensors
 /// on success (broadcast as needed), or a `TensorError` on failure.
@@ -2048,9 +1929,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = max(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = max(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2059,9 +1940,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
-/// > assert Ok(x) = max(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
+/// > let assert Ok(x) = max(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2071,16 +1952,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > max(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > max(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -2089,15 +1970,9 @@ pub fn max(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_max, a, b)
 }
 
-if erlang {
-  external fn do_max(Native, Native) -> NativeResult =
-    "argamak_ffi" "max"
-}
-
-if javascript {
-  external fn do_max(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "max"
-}
+@external(erlang, "argamak_ffi", "max")
+@external(javascript, "../argamak_ffi.mjs", "max")
+fn do_max(a: Native, b: Native) -> NativeResult
 
 /// Results in a `Tensor` that is the element-wise minimum of the given tensors
 /// on success (broadcast as needed), or a `TensorError` on failure.
@@ -2107,9 +1982,9 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("Y"))
-/// > assert Ok(a) = from_ints(of: [1, 9], into: d1)
-/// > assert Ok(x) = min(a, from_int(3))
+/// > let assert Ok(d1) = space.d1(Infer("Y"))
+/// > let assert Ok(a) = from_ints(of: [1, 9], into: d1)
+/// > let assert Ok(x) = min(a, from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2118,9 +1993,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d2) = space.d2(Infer("X"), Y(2))
-/// > assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
-/// > assert Ok(x) = min(a, b)
+/// > let assert Ok(d2) = space.d2(Infer("X"), Y(2))
+/// > let assert Ok(b) = from_ints(of: [0, 4, 5, -9], into: d2)
+/// > let assert Ok(x) = min(a, b)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2130,16 +2005,16 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(c) = from_ints(of: [4, 5, 0], into: d3)
 /// > min(b, c)
 /// Error(SpaceErrors([
 ///   SpaceError(CannotMerge, [Y(3), X(2)]),
 ///   SpaceError(CannotMerge, [Z(1), Y(2)]),
 /// ]))
 ///
-/// > assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
-/// > assert Ok(c) = reshape(put: c, into: d3)
+/// > let assert Ok(d3) = space.d3(Z(1), Infer("X"), Y(1))
+/// > let assert Ok(c) = reshape(put: c, into: d3)
 /// > min(b, c)
 /// Error(CannotBroadcast)
 /// ```
@@ -2148,15 +2023,9 @@ pub fn min(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
   broadcastable(do_min, a, b)
 }
 
-if erlang {
-  external fn do_min(Native, Native) -> NativeResult =
-    "argamak_ffi" "min"
-}
-
-if javascript {
-  external fn do_min(Native, Native) -> NativeResult =
-    "../argamak_ffi.mjs" "min"
-}
+@external(erlang, "argamak_ffi", "min")
+@external(javascript, "../argamak_ffi.mjs", "min")
+fn do_min(a: Native, b: Native) -> NativeResult
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Basic Math Functions                   //
@@ -2178,8 +2047,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.3], into: d1)
 /// > absolute_value(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2188,8 +2057,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
 /// > absolute_value(x) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2205,15 +2074,9 @@ pub fn absolute_value(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_absolute_value(to_native(x)))
 }
 
-if erlang {
-  external fn do_absolute_value(Native) -> Native =
-    "argamak_ffi" "absolute_value"
-}
-
-if javascript {
-  external fn do_absolute_value(Native) -> Native =
-    "../argamak_ffi.mjs" "absolute_value"
-}
+@external(erlang, "argamak_ffi", "absolute_value")
+@external(javascript, "../argamak_ffi.mjs", "absolute_value")
+fn do_absolute_value(x: Native) -> Native
 
 /// Returns the element-wise negation of the given `Tensor`.
 ///
@@ -2231,8 +2094,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.3], into: d1)
 /// > negate(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2241,8 +2104,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
 /// > negate(x) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2258,15 +2121,9 @@ pub fn negate(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_negate(to_native(x)))
 }
 
-if erlang {
-  external fn do_negate(Native) -> Native =
-    "argamak_ffi" "negate"
-}
-
-if javascript {
-  external fn do_negate(Native) -> Native =
-    "../argamak_ffi.mjs" "negate"
-}
+@external(erlang, "argamak_ffi", "negate")
+@external(javascript, "../argamak_ffi.mjs", "negate")
+fn do_negate(x: Native) -> Native
 
 /// Returns an element-wise indication of the sign of the given `Tensor`.
 ///
@@ -2287,8 +2144,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.3], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.3], into: d1)
 /// > sign(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2297,8 +2154,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [-1, 8, 0], into: d3)
 /// > sign(x) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2314,15 +2171,9 @@ pub fn sign(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_sign(to_native(x)))
 }
 
-if erlang {
-  external fn do_sign(Native) -> Native =
-    "argamak_ffi" "sign"
-}
-
-if javascript {
-  external fn do_sign(Native) -> Native =
-    "../argamak_ffi.mjs" "sign"
-}
+@external(erlang, "argamak_ffi", "sign")
+@external(javascript, "../argamak_ffi.mjs", "sign")
+fn do_sign(x: Native) -> Native
 
 /// Returns the element-wise ceiling of the given `Tensor`, with `Format`
 /// retained.
@@ -2341,8 +2192,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.5], into: d1)
 /// > ceiling(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2351,8 +2202,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > ceiling(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2368,15 +2219,9 @@ pub fn ceiling(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_ceiling(to_native(x)))
 }
 
-if erlang {
-  external fn do_ceiling(Native) -> Native =
-    "argamak_ffi" "ceiling"
-}
-
-if javascript {
-  external fn do_ceiling(Native) -> Native =
-    "../argamak_ffi.mjs" "ceiling"
-}
+@external(erlang, "argamak_ffi", "ceiling")
+@external(javascript, "../argamak_ffi.mjs", "ceiling")
+fn do_ceiling(x: Native) -> Native
 
 /// Returns the element-wise floor of the given `Tensor`, with `Format` retained.
 ///
@@ -2394,8 +2239,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.5], into: d1)
 /// > floor(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2404,8 +2249,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > floor(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2421,15 +2266,9 @@ pub fn floor(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_floor(to_native(x)))
 }
 
-if erlang {
-  external fn do_floor(Native) -> Native =
-    "argamak_ffi" "floor"
-}
-
-if javascript {
-  external fn do_floor(Native) -> Native =
-    "../argamak_ffi.mjs" "floor"
-}
+@external(erlang, "argamak_ffi", "floor")
+@external(javascript, "../argamak_ffi.mjs", "floor")
+fn do_floor(x: Native) -> Native
 
 /// Returns the element-wise rounding of the given `Tensor`, with `Format`
 /// retained.
@@ -2448,8 +2287,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.5], into: d1)
 /// > round(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2458,8 +2297,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > round(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2475,15 +2314,9 @@ pub fn round(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_round(to_native(x)))
 }
 
-if erlang {
-  external fn do_round(Native) -> Native =
-    "argamak_ffi" "round"
-}
-
-if javascript {
-  external fn do_round(Native) -> Native =
-    "../argamak_ffi.mjs" "round"
-}
+@external(erlang, "argamak_ffi", "round")
+@external(javascript, "../argamak_ffi.mjs", "round")
+fn do_round(x: Native) -> Native
 
 /// Returns the element-wise natural exponential (Euler's number raised to the
 /// power of `x`) of the given `Tensor`, with `Format` retained.
@@ -2502,8 +2335,8 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [-0.5], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [-0.5], into: d1)
 /// > exp(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2512,8 +2345,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [-1.2, 7.8, 0.0], into: d3)
 /// > exp(x) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -2529,15 +2362,9 @@ pub fn exp(x: Tensor(a)) -> Tensor(a) {
   Tensor(..x, data: do_exp(to_native(x)))
 }
 
-if erlang {
-  external fn do_exp(Native) -> Native =
-    "argamak_ffi" "exp"
-}
-
-if javascript {
-  external fn do_exp(Native) -> Native =
-    "../argamak_ffi.mjs" "exp"
-}
+@external(erlang, "argamak_ffi", "exp")
+@external(javascript, "../argamak_ffi.mjs", "exp")
+fn do_exp(x: Native) -> Native
 
 /// Results in the element-wise square root of the given `Tensor` on success, or
 /// a `TensorError` on failure, with `Format` retained.
@@ -2545,7 +2372,7 @@ if javascript {
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(x) = square_root(from_int(3))
+/// > let assert Ok(x) = square_root(from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2556,9 +2383,9 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.5], into: d1)
-/// > assert Ok(x) = square_root(x)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.5], into: d1)
+/// > let assert Ok(x) = square_root(x)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -2567,9 +2394,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
-/// > assert Ok(x) = square_root(x)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(x) = square_root(x)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -2585,23 +2412,18 @@ if javascript {
 /// ```
 ///
 pub fn square_root(x: Tensor(a)) -> TensorResult(a) {
-  try native =
+  use native <- result.try(
     x
     |> to_native
-    |> do_square_root
+    |> do_square_root,
+  )
   Tensor(..x, data: native)
   |> Ok
 }
 
-if erlang {
-  external fn do_square_root(Native) -> NativeResult =
-    "argamak_ffi" "square_root"
-}
-
-if javascript {
-  external fn do_square_root(Native) -> NativeResult =
-    "../argamak_ffi.mjs" "square_root"
-}
+@external(erlang, "argamak_ffi", "square_root")
+@external(javascript, "../argamak_ffi.mjs", "square_root")
+fn do_square_root(x: Native) -> NativeResult
 
 /// Results in the element-wise natural logarithm of the given `Tensor` on
 /// success, or a `TensorError` on failure, with `Format` retained.
@@ -2609,7 +2431,7 @@ if javascript {
 /// ## Examples
 ///
 /// ```gleam
-/// > assert Ok(x) = ln(from_int(3))
+/// > let assert Ok(x) = ln(from_int(3))
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -2620,9 +2442,9 @@ if javascript {
 ///
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_floats(of: [1.5], into: d1)
-/// > assert Ok(x) = ln(x)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_floats(of: [1.5], into: d1)
+/// > let assert Ok(x) = ln(x)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -2631,9 +2453,9 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
-/// > assert Ok(x) = ln(x)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_floats(of: [1.2, 7.8, 0.0], into: d3)
+/// > let assert Ok(x) = ln(x)
 /// > print(x)
 /// Tensor(
 ///   Format(Float32),
@@ -2649,23 +2471,18 @@ if javascript {
 /// ```
 ///
 pub fn ln(x: Tensor(a)) -> TensorResult(a) {
-  try native =
+  use native <- result.try(
     x
     |> to_native
-    |> do_ln
+    |> do_ln,
+  )
   Tensor(..x, data: native)
   |> Ok
 }
 
-if erlang {
-  external fn do_ln(Native) -> NativeResult =
-    "argamak_ffi" "ln"
-}
-
-if javascript {
-  external fn do_ln(Native) -> NativeResult =
-    "../argamak_ffi.mjs" "ln"
-}
+@external(erlang, "argamak_ffi", "ln")
+@external(javascript, "../argamak_ffi.mjs", "ln")
+fn do_ln(x: Native) -> NativeResult
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Reduction Functions                    //
@@ -2686,8 +2503,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 0], into: d1)
 /// > all(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2704,8 +2521,8 @@ if javascript {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [1, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [1, 2], into: d3)
 /// > all(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2727,15 +2544,9 @@ pub fn all(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_all, x, filter, Away)
 }
 
-if erlang {
-  external fn do_all(Native, Indices) -> Native =
-    "argamak_ffi" "all"
-}
-
-if javascript {
-  external fn do_all(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "all"
-}
+@external(erlang, "argamak_ffi", "all")
+@external(javascript, "../argamak_ffi.mjs", "all")
+fn do_all(x: Native, indices: Indices) -> Native
 
 /// A variant of `all` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -2747,8 +2558,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [0, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [0, 2], into: d3)
 /// > in_situ_all(x, with: fn(a) { axis.name(a) == "Z" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2781,8 +2592,8 @@ pub fn in_situ_all(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 0], into: d1)
 /// > any(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2799,8 +2610,8 @@ pub fn in_situ_all(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [0, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [0, 0], into: d3)
 /// > any(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2822,15 +2633,9 @@ pub fn any(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_any, x, filter, Away)
 }
 
-if erlang {
-  external fn do_any(Native, Indices) -> Native =
-    "argamak_ffi" "any"
-}
-
-if javascript {
-  external fn do_any(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "any"
-}
+@external(erlang, "argamak_ffi", "any")
+@external(javascript, "../argamak_ffi.mjs", "any")
+fn do_any(x: Native, indices: Indices) -> Native
 
 /// A variant of `any` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -2842,8 +2647,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
-/// > assert Ok(x) = from_ints(of: [0, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(1))
+/// > let assert Ok(x) = from_ints(of: [0, 2], into: d3)
 /// > in_situ_any(x, with: fn(a) { axis.name(a) == "Z" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2876,8 +2681,8 @@ pub fn in_situ_any(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 0], into: d1)
 /// > arg_max(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2894,8 +2699,8 @@ pub fn in_situ_any(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
 /// > arg_max(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2918,15 +2723,9 @@ pub fn arg_max(from x: Tensor(a), with find: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axis(do_arg_max, x, find, Away)
 }
 
-if erlang {
-  external fn do_arg_max(Native, Int) -> Native =
-    "argamak_ffi" "arg_max"
-}
-
-if javascript {
-  external fn do_arg_max(Native, Int) -> Native =
-    "../argamak_ffi.mjs" "arg_max"
-}
+@external(erlang, "argamak_ffi", "arg_max")
+@external(javascript, "../argamak_ffi.mjs", "arg_max")
+fn do_arg_max(x: Native, index: Int) -> Native
 
 /// A variant of `arg_max` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -2938,8 +2737,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
 /// > in_situ_arg_max(x, with: fn(a) { axis.name(a) == "Y" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2980,8 +2779,8 @@ pub fn in_situ_arg_max(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 0], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 0], into: d1)
 /// > arg_min(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -2998,8 +2797,8 @@ pub fn in_situ_arg_max(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
 /// > arg_min(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3022,15 +2821,9 @@ pub fn arg_min(from x: Tensor(a), with find: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axis(do_arg_min, x, find, Away)
 }
 
-if erlang {
-  external fn do_arg_min(Native, Int) -> Native =
-    "argamak_ffi" "arg_min"
-}
-
-if javascript {
-  external fn do_arg_min(Native, Int) -> Native =
-    "../argamak_ffi.mjs" "arg_min"
-}
+@external(erlang, "argamak_ffi", "arg_min")
+@external(javascript, "../argamak_ffi.mjs", "arg_min")
+fn do_arg_min(x: Native, index: Int) -> Native
 
 /// A variant of `arg_min` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3042,8 +2835,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d3)
 /// > in_situ_arg_min(x, with: fn(a) { axis.name(a) == "Y" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3084,8 +2877,8 @@ pub fn in_situ_arg_min(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 2], into: d1)
 /// > max_over(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3102,8 +2895,8 @@ pub fn in_situ_arg_min(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > max_over(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3125,15 +2918,9 @@ pub fn max_over(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_max_over, x, filter, Away)
 }
 
-if erlang {
-  external fn do_max_over(Native, Indices) -> Native =
-    "argamak_ffi" "max_over"
-}
-
-if javascript {
-  external fn do_max_over(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "max_over"
-}
+@external(erlang, "argamak_ffi", "max_over")
+@external(javascript, "../argamak_ffi.mjs", "max_over")
+fn do_max_over(x: Native, indices: Indices) -> Native
 
 /// A variant of `max_over` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3145,8 +2932,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > in_situ_max_over(x, with: fn(a) { axis.name(a) == "Y" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3187,8 +2974,8 @@ pub fn in_situ_max_over(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 2], into: d1)
 /// > min_over(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3205,8 +2992,8 @@ pub fn in_situ_max_over(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > min_over(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3228,15 +3015,9 @@ pub fn min_over(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_min_over, x, filter, Away)
 }
 
-if erlang {
-  external fn do_min_over(Native, Indices) -> Native =
-    "argamak_ffi" "min_over"
-}
-
-if javascript {
-  external fn do_min_over(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "min_over"
-}
+@external(erlang, "argamak_ffi", "min_over")
+@external(javascript, "../argamak_ffi.mjs", "min_over")
+fn do_min_over(x: Native, indices: Indices) -> Native
 
 /// A variant of `min_over` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3248,8 +3029,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > in_situ_min_over(x, with: fn(a) { axis.name(a) == "Y" }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3290,8 +3071,8 @@ pub fn in_situ_min_over(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 2], into: d1)
 /// > sum(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3308,8 +3089,8 @@ pub fn in_situ_min_over(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
 /// > sum(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3331,15 +3112,9 @@ pub fn sum(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_sum, x, filter, Away)
 }
 
-if erlang {
-  external fn do_sum(Native, Indices) -> Native =
-    "argamak_ffi" "sum"
-}
-
-if javascript {
-  external fn do_sum(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "sum"
-}
+@external(erlang, "argamak_ffi", "sum")
+@external(javascript, "../argamak_ffi.mjs", "sum")
+fn do_sum(a: Native, b: Indices) -> Native
 
 /// A variant of `sum` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3351,8 +3126,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [2, 4, 3, 0], into: d3)
 /// > in_situ_sum(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3393,8 +3168,8 @@ pub fn in_situ_sum(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 2], into: d1)
 /// > product(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3411,8 +3186,8 @@ pub fn in_situ_sum(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > product(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3434,15 +3209,9 @@ pub fn product(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_product, x, filter, Away)
 }
 
-if erlang {
-  external fn do_product(Native, Indices) -> Native =
-    "argamak_ffi" "product"
-}
-
-if javascript {
-  external fn do_product(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "product"
-}
+@external(erlang, "argamak_ffi", "product")
+@external(javascript, "../argamak_ffi.mjs", "product")
+fn do_product(x: Native, indices: Indices) -> Native
 
 /// A variant of `product` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3454,8 +3223,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_ints(of: [1, 4, 3, 2], into: d3)
 /// > in_situ_product(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3496,8 +3265,8 @@ pub fn in_situ_product(
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [-1, 2], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [-1, 2], into: d1)
 /// > mean(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3514,8 +3283,8 @@ pub fn in_situ_product(
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
 /// > mean(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Int32),
@@ -3537,15 +3306,9 @@ pub fn mean(from x: Tensor(a), with filter: fn(Axis) -> Bool) -> Tensor(a) {
   reducible_over_axes(do_mean, x, filter, Away)
 }
 
-if erlang {
-  external fn do_mean(Native, Indices) -> Native =
-    "argamak_ffi" "mean"
-}
-
-if javascript {
-  external fn do_mean(Native, Indices) -> Native =
-    "../argamak_ffi.mjs" "mean"
-}
+@external(erlang, "argamak_ffi", "mean")
+@external(javascript, "../argamak_ffi.mjs", "mean")
+fn do_mean(x: Native, indices: Indices) -> Native
 
 /// A variant of `mean` that preserves all `Axes` from the given `Tensor`.
 ///
@@ -3557,8 +3320,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{Infer, X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
-/// > assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
+/// > let assert Ok(d3) = space.d3(X(1), Infer("Y"), Z(2))
+/// > let assert Ok(x) = from_floats(of: [1.0, 4.0, 3.0, 2.0], into: d3)
 /// > in_situ_mean(x, with: fn(_) { True }) |> print
 /// Tensor(
 ///   Format(Float32),
@@ -3588,8 +3351,121 @@ pub fn in_situ_mean(
 // Slicing & Joining Functions            //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
+/// Results in a new `Tensor` formed by concatenating (joining) the given list
+/// of tensors along a select `Axis` on success, or a `TensorError` on failure.
+///
+/// The first `Axis` for which the given `find` function returns `True` is
+/// selected for joining.
+///
+/// If the `find` function returns `False` for every `Axis`, the tensors will
+/// be joined along the first `Axis`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// > import argamak/axis.{Infer, X, Y}
+/// > import argamak/space
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(a) = from_ints(of: [0, 1, 2, 3], into: d1)
+/// > let assert Ok(b) = from_ints(of: [4, 5, 6, 7], into: d1)
+/// > let assert Ok(x) = concat([a, b], with: fn(_) { True })
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(8)),
+///   [0, 1, 2, 3, 4, 5, 6, 7],
+/// )
+/// Nil
+///
+/// > let assert Ok(d2) = space.d2(X(2), Infer("Y"))
+/// > let assert Ok(a) = reshape(put: a, into: d2)
+/// > let assert Ok(b) = from_ints(of: [4, 5], into: d2)
+/// > let assert Ok(x) = concat([a, b], with: fn(a) { axis.name(a) == "Y" })
+/// > print(x)
+/// Tensor(
+///   Format(Int32),
+///   Space(X(2), Y(3)),
+///   [[0, 1, 4],
+///    [2, 3, 5]],
+/// )
+/// Nil
+///
+/// > concat([a, b], with: fn(a) { axis.name(a) == "X" })
+/// Error(IncompatibleShape)
+///
+/// > let assert Ok(b) = reshape(put: b, into: d1)
+/// > concat([a, b], with: fn(a) { axis.name(a) == "X" })
+/// Error(IncompatibleShape)
+///
+/// > let assert Ok(d2) = space.d2(Infer("Z"), Y(1))
+/// > let assert Ok(b) = reshape(put: b, into: d2)
+/// > concat([a, b], with: fn(a) { axis.name(a) == "Y" })
+/// Error(IncompatibleShape)
+/// ```
+///
+pub fn concat(
+  xs: List(Tensor(a)),
+  with find: fn(Axis) -> Bool,
+) -> TensorResult(a) {
+  use [x, ..rest] <- result.try(case xs {
+    [_, ..] -> Ok(xs)
+    _else -> Error(InvalidData)
+  })
+  let new_axes = axes(x)
+
+  use index <- result.try(
+    new_axes
+    |> iterator.from_list
+    |> iterator.index
+    |> iterator.find(one_that: fn(item) { find(item.1) })
+    |> result.map(with: fn(x) { x.0 })
+    |> result.lazy_or(fn() {
+      case new_axes {
+        [_, ..] -> Ok(0)
+        _else -> Error(Nil)
+      }
+    })
+    |> result.replace_error(IncompatibleShape),
+  )
+  use new_axes <- result.try({
+    use new_axes, x <- list.try_fold(over: rest, from: new_axes)
+    use pairs <- result.try(
+      new_axes
+      |> list.strict_zip(axes(x))
+      |> result.replace_error(IncompatibleShape),
+    )
+    let pairs =
+      pairs
+      |> iterator.from_list
+      |> iterator.index
+    use new_axes, pair <- iterator.try_fold(over: pairs, from: [])
+    let #(i, #(a, b)) = pair
+    case axis.name(a) == axis.name(b) {
+      True if i == index ->
+        [axis.resize(a, axis.size(a) + axis.size(b)), ..new_axes]
+        |> Ok
+      True if a == b -> Ok([a, ..new_axes])
+      _else -> Error(IncompatibleShape)
+    }
+  })
+  let assert Ok(space) =
+    new_axes
+    |> list.reverse
+    |> space.from_list
+
+  let native =
+    xs
+    |> list.map(with: to_native)
+    |> do_concat(index)
+  Tensor(..x, data: native, space: space)
+  |> Ok
+}
+
+@external(erlang, "argamak_ffi", "concat")
+@external(javascript, "../argamak_ffi.mjs", "concat")
+fn do_concat(xs: List(Native), index: Int) -> Native
+
 // TODO
-// concat
 // take
 //   take_along_axis
 //   gather
@@ -3622,8 +3498,8 @@ pub fn in_situ_mean(
 ///
 /// import argamak/axis.{Infer}
 /// import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1], into: d1)
 /// > to_float(x)
 /// Error(IncompatibleShape)
 /// ```
@@ -3634,15 +3510,9 @@ pub fn to_float(x: Tensor(a)) -> Result(Float, TensorError) {
   |> do_to_float
 }
 
-if erlang {
-  external fn do_to_float(Native) -> Result(Float, TensorError) =
-    "argamak_ffi" "to_float"
-}
-
-if javascript {
-  external fn do_to_float(Native) -> Result(Float, TensorError) =
-    "../argamak_ffi.mjs" "to_float"
-}
+@external(erlang, "argamak_ffi", "to_float")
+@external(javascript, "../argamak_ffi.mjs", "to_float")
+fn do_to_float(x: Native) -> Result(Float, TensorError)
 
 /// Results in an `Int` converted from a dimensionless `Tensor` on success, or a
 /// `TensorError` on failure.
@@ -3661,8 +3531,8 @@ if javascript {
 ///
 /// import argamak/axis.{Infer}
 /// import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1], into: d1)
 /// > to_int(x)
 /// Error(IncompatibleShape)
 /// ```
@@ -3673,15 +3543,9 @@ pub fn to_int(x: Tensor(a)) -> Result(Int, TensorError) {
   |> do_to_int
 }
 
-if erlang {
-  external fn do_to_int(Native) -> Result(Int, TensorError) =
-    "argamak_ffi" "to_int"
-}
-
-if javascript {
-  external fn do_to_int(Native) -> Result(Int, TensorError) =
-    "../argamak_ffi.mjs" "to_int"
-}
+@external(erlang, "argamak_ffi", "to_int")
+@external(javascript, "../argamak_ffi.mjs", "to_int")
+fn do_to_int(x: Native) -> Result(Int, TensorError)
 
 /// Results in a `Bool` converted from a dimensionless `Tensor` on success, or a
 /// `TensorError` on failure.
@@ -3699,8 +3563,8 @@ if javascript {
 ///
 /// import argamak/axis.{Infer}
 /// import argamak/space
-/// > assert Ok(d1) = space.d1(Infer("X"))
-/// > assert Ok(x) = from_ints(of: [1], into: d1)
+/// > let assert Ok(d1) = space.d1(Infer("X"))
+/// > let assert Ok(x) = from_ints(of: [1], into: d1)
 /// > to_bool(x)
 /// Error(IncompatibleShape)
 /// ```
@@ -3726,8 +3590,8 @@ pub fn to_bool(x: Tensor(a)) -> Result(Bool, TensorError) {
 ///
 /// > import argamak/axis.{X, Y}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(3), Y(1))
-/// > assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d2)
+/// > let assert Ok(d2) = space.d2(X(3), Y(1))
+/// > let assert Ok(x) = from_floats(of: [1.0, 2.0, 3.0], into: d2)
 /// > to_floats(x)
 /// [1.0, 2.0, 3.0]
 /// ```
@@ -3738,15 +3602,9 @@ pub fn to_floats(x: Tensor(a)) -> List(Float) {
   |> do_to_floats
 }
 
-if erlang {
-  external fn do_to_floats(Native) -> List(Float) =
-    "argamak_ffi" "to_floats"
-}
-
-if javascript {
-  external fn do_to_floats(Native) -> List(Float) =
-    "../argamak_ffi.mjs" "to_floats"
-}
+@external(erlang, "argamak_ffi", "to_floats")
+@external(javascript, "../argamak_ffi.mjs", "to_floats")
+fn do_to_floats(x: Native) -> List(Float)
 
 /// Converts a `Tensor` into a flat list of integers.
 ///
@@ -3761,8 +3619,8 @@ if javascript {
 ///
 /// > import argamak/axis.{X, Y}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(3), Y(1))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
+/// > let assert Ok(d2) = space.d2(X(3), Y(1))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3], into: d2)
 /// > to_ints(x)
 /// [1, 2, 3]
 /// ```
@@ -3773,15 +3631,9 @@ pub fn to_ints(x: Tensor(a)) -> List(Int) {
   |> do_to_ints
 }
 
-if erlang {
-  external fn do_to_ints(Native) -> List(Int) =
-    "argamak_ffi" "to_ints"
-}
-
-if javascript {
-  external fn do_to_ints(Native) -> List(Int) =
-    "../argamak_ffi.mjs" "to_ints"
-}
+@external(erlang, "argamak_ffi", "to_ints")
+@external(javascript, "../argamak_ffi.mjs", "to_ints")
+fn do_to_ints(x: Native) -> List(Int)
 
 /// Converts a `Tensor` into a flat list of booleans.
 ///
@@ -3795,8 +3647,8 @@ if javascript {
 ///
 /// > import argamak/axis.{X, Y}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(3), Y(1))
-/// > assert Ok(x) = from_ints(of: [1, 0, -3], into: d2)
+/// > let assert Ok(d2) = space.d2(X(3), Y(1))
+/// > let assert Ok(x) = from_ints(of: [1, 0, -3], into: d2)
 /// > to_bools(x)
 /// [True, False, True]
 /// ```
@@ -3814,8 +3666,8 @@ pub fn to_bools(x: Tensor(a)) -> List(Bool) {
 /// ## Examples
 ///
 /// ```gleam
-/// > external fn erlang_rank(Native) -> Int =
-/// >   "Elixir.Nx" "rank"
+/// > @external(erlang, "Elixir.Nx", "rank")
+/// > fn erlang_rank(tensor: Native) -> Int
 /// > to_native(from_int(3)) |> erlang_rank
 /// 0
 /// ```
@@ -3843,15 +3695,15 @@ pub type ToString {
 /// ```gleam
 /// > import argamak/axis.{X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
 /// > to_string(from: x, return: Data, wrap_at: 0)
 /// "[[1, 2],
 ///  [3, 4]]"
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
 /// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > let assert Ok(x) = from_ints(of: xs, into: d3)
 /// > do_print(from: x, return: Record, wrap_at: 10)
 /// "Tensor(
 ///   Format(Int32),
@@ -3904,15 +3756,9 @@ pub fn to_string(
   }
 }
 
-if erlang {
-  external fn columns() -> Int =
-    "argamak_ffi" "columns"
-}
-
-if javascript {
-  external fn columns() -> Int =
-    "../argamak_ffi.mjs" "columns"
-}
+@external(erlang, "argamak_ffi", "columns")
+@external(javascript, "../argamak_ffi.mjs", "columns")
+fn columns() -> Int
 
 type ToStringAcc {
   ToStringAcc(built: List(StringBuilder), builder: StringBuilder)
@@ -3970,36 +3816,36 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
           let builder =
             string_builder.append_builder(to: acc.builder, suffix: x)
           let should_build_j = should_build(j)
-          use <- when(
-              should_build_j && rank == 0,
-              then: fn() {
-                ToStringAcc(..acc, built: list.append(acc.built, [builder]))
-              },
-            )
-          use <- when(
-              should_build_j,
-              then: fn() {
-                let builder =
-                  builder
-                  |> string_builder.prepend(prefix: "[")
-                  |> string_builder.append(suffix: "]")
-                ToStringAcc(
-                  built: list.append(acc.built, [builder]),
-                  builder: init_builder,
-                )
-              },
-            )
-          use <- when(
-              should_wrap(j),
-              then: fn() {
-                let indent = string.repeat(" ", times: tab + rank)
-                let builder =
-                  builder
-                  |> string_builder.append(suffix: ",\n")
-                  |> string_builder.append(suffix: indent)
-                ToStringAcc(..acc, builder: builder)
-              },
-            )
+          use <- bool_lazy_guard(
+            when: should_build_j && rank == 0,
+            return: fn() {
+              ToStringAcc(..acc, built: list.append(acc.built, [builder]))
+            },
+          )
+          use <- bool_lazy_guard(
+            when: should_build_j,
+            return: fn() {
+              let builder =
+                builder
+                |> string_builder.prepend(prefix: "[")
+                |> string_builder.append(suffix: "]")
+              ToStringAcc(
+                built: list.append(acc.built, [builder]),
+                builder: init_builder,
+              )
+            },
+          )
+          use <- bool_lazy_guard(
+            when: should_wrap(j),
+            return: fn() {
+              let indent = string.repeat(" ", times: tab + rank)
+              let builder =
+                builder
+                |> string_builder.append(suffix: ",\n")
+                |> string_builder.append(suffix: indent)
+              ToStringAcc(..acc, builder: builder)
+            },
+          )
           // else
           let builder = string_builder.append(to: builder, suffix: ", ")
           ToStringAcc(..acc, builder: builder)
@@ -4009,19 +3855,19 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
           let #(j, x) = item
           let builder =
             string_builder.append_builder(to: acc.builder, suffix: x)
-          use <- when(
-              should_build(j),
-              then: fn() {
-                let builder =
-                  builder
-                  |> string_builder.prepend(prefix: "[")
-                  |> string_builder.append(suffix: "]")
-                ToStringAcc(
-                  built: list.append(acc.built, [builder]),
-                  builder: init_builder,
-                )
-              },
-            )
+          use <- bool_lazy_guard(
+            when: should_build(j),
+            return: fn() {
+              let builder =
+                builder
+                |> string_builder.prepend(prefix: "[")
+                |> string_builder.append(suffix: "]")
+              ToStringAcc(
+                built: list.append(acc.built, [builder]),
+                builder: init_builder,
+              )
+            },
+          )
           // else
           let indent = string.repeat(" ", times: tab + rank - i)
           let builder =
@@ -4042,15 +3888,9 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
   |> string_builder.to_string
 }
 
-if erlang {
-  external fn prepare_to_string(Native) -> #(List(String), Int) =
-    "argamak_ffi" "prepare_to_string"
-}
-
-if javascript {
-  external fn prepare_to_string(Native) -> #(List(String), Int) =
-    "../argamak_ffi.mjs" "prepare_to_string"
-}
+@external(erlang, "argamak_ffi", "prepare_to_string")
+@external(javascript, "../argamak_ffi.mjs", "prepare_to_string")
+fn prepare_to_string(x: Native) -> #(List(String), Int)
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Utility Functions                      //
@@ -4063,8 +3903,8 @@ if javascript {
 /// ```gleam
 /// > import argamak/axis.{X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
 /// > debug(x)
 /// Tensor(
 ///   Format(Int32),
@@ -4074,9 +3914,9 @@ if javascript {
 /// )
 /// x
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
 /// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > let assert Ok(x) = from_ints(of: xs, into: d3)
 /// > debug(x)
 /// Tensor(
 ///   Format(Int32),
@@ -4099,8 +3939,8 @@ pub fn debug(x: Tensor(a)) -> Tensor(a) {
 /// ```gleam
 /// > import argamak/axis.{X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -4110,9 +3950,9 @@ pub fn debug(x: Tensor(a)) -> Tensor(a) {
 /// )
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
 /// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > let assert Ok(x) = from_ints(of: xs, into: d3)
 /// > print(x)
 /// Tensor(
 ///   Format(Int32),
@@ -4136,16 +3976,16 @@ pub fn print(x: Tensor(a)) -> Nil {
 /// ```gleam
 /// > import argamak/axis.{X, Y, Z}
 /// > import argamak/space
-/// > assert Ok(d2) = space.d2(X(2), Y(2))
-/// > assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
+/// > let assert Ok(d2) = space.d2(X(2), Y(2))
+/// > let assert Ok(x) = from_ints(of: [1, 2, 3, 4], into: d2)
 /// > print_data(x)
 /// [[1, 2],
 ///  [3, 4]]
 /// Nil
 ///
-/// > assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
+/// > let assert Ok(d3) = space.d3(X(2), Y(1), Z(4))
 /// > let xs = [1, 2, 3, 4, 5, 6, 7, 8]
-/// > assert Ok(x) = from_ints(of: xs, into: d3)
+/// > let assert Ok(x) = from_ints(of: xs, into: d3)
 /// > print_data(x)
 /// [[[1, 2, 3, 4]],
 ///  [[5, 6, 7, 8]]]
@@ -4170,23 +4010,18 @@ fn tensor(
   into space: Space,
   with new_format: Format(b),
 ) -> TensorResult(b) {
-  try native = do_tensor(data, format.to_native(new_format))
-  try x =
+  use native <- result.try(do_tensor(data, format.to_native(new_format)))
+  use x <- result.try(
     native
     |> Tensor(format: new_format, space: space)
-    |> reshape(into: space)
+    |> reshape(into: space),
+  )
   Ok(x)
 }
 
-if erlang {
-  external fn do_tensor(data, format) -> NativeResult =
-    "argamak_ffi" "tensor"
-}
-
-if javascript {
-  external fn do_tensor(data, format) -> NativeResult =
-    "../argamak_ffi.mjs" "tensor"
-}
+@external(erlang, "argamak_ffi", "tensor")
+@external(javascript, "../argamak_ffi.mjs", "tensor")
+fn do_tensor(data: a, format: b) -> NativeResult
 
 type FitBy {
   Definition
@@ -4207,10 +4042,10 @@ type FitAcc(axis) {
 fn fit(x: Tensor(a)) -> TensorResult(a) {
   let dividend = size(x)
   let FitAcc(divisor: divisor, fit_by: fit_by) = {
-    use
-      acc,
-      axis
-    <- list.fold(over: axes(x), from: FitAcc(divisor: 1, fit_by: Definition))
+    use acc, axis <- list.fold(
+      over: axes(x),
+      from: FitAcc(divisor: 1, fit_by: Definition),
+    )
     case axis {
       Infer(_) -> FitAcc(..acc, fit_by: Inference)
       _else -> FitAcc(..acc, divisor: acc.divisor * axis.size(axis))
@@ -4220,7 +4055,7 @@ fn fit(x: Tensor(a)) -> TensorResult(a) {
   case dividend % divisor {
     0 if fit_by == Definition -> Ok(x)
     0 if fit_by == Inference -> {
-      assert Ok(space) = {
+      let assert Ok(space) = {
         use axis <- space.map(space(x))
         case axis {
           Infer(_) -> axis.resize(axis, dividend / divisor)
@@ -4239,12 +4074,13 @@ fn broadcastable(
   a: Tensor(a),
   b: Tensor(a),
 ) -> TensorResult(a) {
-  try space =
+  use space <- result.try(
     a
     |> space
     |> space.merge(space(b))
-    |> result.map_error(with: SpaceErrors)
-  try native = f(to_native(a), to_native(b))
+    |> result.map_error(with: SpaceErrors),
+  )
+  use native <- result.try(f(to_native(a), to_native(b)))
   Tensor(..a, data: native, space: space)
   |> Ok
 }
@@ -4254,7 +4090,7 @@ fn sign_not_equal(a: Tensor(a), b: Tensor(a)) -> TensorResult(a) {
     0
     |> from_int
     |> reformat(apply: format(a))
-  try x = multiply(sign(a), sign(b))
+  use x <- result.try(multiply(sign(a), sign(b)))
   less(is: x, than: zero)
 }
 
@@ -4266,19 +4102,20 @@ fn permit_zero(
     0
     |> from_int
     |> reformat(apply: format(x))
-  try is_nonzero = not_equal(is: x, to: zero)
-  try is_zero = equal(is: x, to: zero)
-  try x = add(x, is_zero)
-  try x = f(x)
+  use is_nonzero <- result.try(not_equal(is: x, to: zero))
+  use is_zero <- result.try(equal(is: x, to: zero))
+  use x <- result.try(add(x, is_zero))
+  use x <- result.try(f(x))
   multiply(x, is_nonzero)
 }
 
 fn all_nonzero(x: Tensor(a)) -> TensorResult(a) {
-  try all =
+  use all <- result.try(
     x
     |> all(with: fn(_axis) { True })
     |> reformat(apply: format.int32())
-    |> to_int
+    |> to_int,
+  )
   case all {
     1 -> Ok(x)
     _else -> Error(ZeroDivision)
@@ -4301,11 +4138,10 @@ fn reducible_over_axes(
   reduce: Reducible,
 ) -> Tensor(a) {
   let acc = {
-    use
-      acc,
-      axis,
-      index
-    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    use acc, axis, index <- list.index_fold(
+      over: axes(x),
+      from: ReducibleAcc([], []),
+    )
     case filter(axis) {
       True if reduce == InSitu -> {
         let axis = axis.resize(axis, 1)
@@ -4315,7 +4151,7 @@ fn reducible_over_axes(
       False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
     }
   }
-  assert Ok(new_space) =
+  let assert Ok(new_space) =
     acc.axes
     |> list.reverse
     |> space.from_list
@@ -4323,7 +4159,7 @@ fn reducible_over_axes(
   let native = case list.reverse(acc.indices) {
     [] -> {
       // Normalize by appending a size-1 axis to reduce over (TensorFlow-like)
-      assert Ok(native) =
+      let assert Ok(native) =
         x
         |> shape
         |> list.append([1])
@@ -4331,7 +4167,7 @@ fn reducible_over_axes(
       f(native, [rank(x)])
     }
     indices -> {
-      assert Ok(native) =
+      let assert Ok(native) =
         native
         |> f(indices)
         |> do_reshape(space.shape(new_space))
@@ -4348,11 +4184,10 @@ fn reducible_over_axis(
   reduce: Reducible,
 ) -> Tensor(a) {
   let acc = {
-    use
-      acc,
-      axis,
-      index
-    <- list.index_fold(over: axes(x), from: ReducibleAcc([], []))
+    use acc, axis, index <- list.index_fold(
+      over: axes(x),
+      from: ReducibleAcc([], []),
+    )
     case acc.indices == [] && find(axis) {
       True if reduce == InSitu -> {
         let axis = axis.resize(axis, 1)
@@ -4362,22 +4197,22 @@ fn reducible_over_axis(
       False -> ReducibleAcc(..acc, axes: [axis, ..acc.axes])
     }
   }
-  assert Ok(new_space) =
+  let assert Ok(new_space) =
     acc.axes
     |> list.reverse
     |> space.from_list
   case acc.indices {
     [] -> {
       // Normalize by flattening the tensor if no index is found (Nx-like)
-      assert Ok(new_space) =
+      let assert Ok(new_space) =
         "Nil"
         |> Infer
         |> space.d1
-      assert Ok(x) = reshape(put: x, into: new_space)
+      let assert Ok(x) = reshape(put: x, into: new_space)
       Tensor(..x, data: f(to_native(x), 0), space: space.new())
     }
     [index, ..] -> {
-      assert Ok(native) =
+      let assert Ok(native) =
         x
         |> to_native
         |> f(index)
@@ -4394,9 +4229,13 @@ fn int_to_bool(x) {
   }
 }
 
-fn when(condition: Bool, then f: fn() -> a, else g: fn() -> a) -> a {
-  case condition {
-    True -> f()
-    False -> g()
+fn bool_lazy_guard(
+  when requirement: Bool,
+  return consequence: fn() -> a,
+  otherwise alternative: fn() -> a,
+) -> a {
+  case requirement {
+    True -> consequence()
+    False -> alternative()
   }
 }

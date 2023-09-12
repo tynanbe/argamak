@@ -33,8 +33,8 @@ class Fn {
 
   static clip_reformat_like(x) {
     return x.dtype === this.dtype
-      ? // Don't clip if reformat is noop.
-        this
+      // Don't clip if reformat is noop.
+      ? this
       : this.reformat_like(x).clip_based_on(this);
   }
 
@@ -155,8 +155,7 @@ export const size = (x) => x.size;
 // Tensor Transformation Functions        //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-export const reformat = (x, format) =>
-  format === x.dtype ? x : x.cast(format);
+export const reformat = (x, format) => format === x.dtype ? x : x.cast(format);
 
 export const reshape = (x, shape) =>
   fn(() => x.reshape(shape.toArray())).shape_result();
@@ -189,19 +188,16 @@ export const less_or_equal = (a, b) =>
   fn(() => a.lessEqual(b).reformat_like(a)).broadcast_result();
 
 export const logical_and = (a, b) =>
-  fn(() =>
-    a.cast("bool").logicalAnd(b.cast("bool")).reformat_like(a),
-  ).broadcast_result();
+  fn(() => a.cast("bool").logicalAnd(b.cast("bool")).reformat_like(a))
+    .broadcast_result();
 
 export const logical_or = (a, b) =>
-  fn(() =>
-    a.cast("bool").logicalOr(b.cast("bool")).reformat_like(a),
-  ).broadcast_result();
+  fn(() => a.cast("bool").logicalOr(b.cast("bool")).reformat_like(a))
+    .broadcast_result();
 
 export const logical_xor = (a, b) =>
-  fn(() =>
-    a.cast("bool").logicalXor(b.cast("bool")).reformat_like(a),
-  ).broadcast_result();
+  fn(() => a.cast("bool").logicalXor(b.cast("bool")).reformat_like(a))
+    .broadcast_result();
 
 export const logical_not = (x) => x.cast("bool").logicalNot().reformat_like(x);
 
@@ -277,6 +273,12 @@ export const sum = (x, i) => x.sum(i.toArray()).clip_reformat_like(x);
 export const product = (x, i) => x.prod(i.toArray()).clip_reformat_like(x);
 
 export const mean = (x, i) => x.mean(i.toArray()).reformat_like(x);
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+// Tensor Slicing & Joining Functions     //
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+export const concat = (xs, i) => tf.concat(xs.toArray(), i);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Tensor Conversion Functions            //

@@ -15,40 +15,45 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.1"
-          elixir-version: "1.14.2"
-          gleam-version: nightly
+          otp-version: "25"
+          elixir-version: "1.14"
+          gleam-version: "0.30"
+
+      - id: cache-gleam
+        uses: actions/cache@v3
+        with:
+          path: build/packages
+          key: ${{ runner.os }}-gleam-${{ hashFiles('manifest.toml') }}
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: "v1.x"
+
+      - id: cache-deno
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.deno
+            ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('deno.lock') }}
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "18"
 
-      - uses: charlieegan3/fetch-gh-release-binary@main
+      - id: cache-node
+        uses: actions/cache@v3
         with:
-          owner: rome
-          repo: tools
-          version: cli/v0.10.1-next
-          asset-pattern: linux-x64
-          install-path: /usr/local/bin/rome
-          verbose: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
 
       - run: echo "$PWD/build/packages/rad/priv" >> $GITHUB_PATH
 
-      - run: gleam deps download
+      - if: ${{ !steps.cache-gleam.outputs.cache-hit }}
+        run: gleam deps download
 
-      - uses: actions/cache@v3
-        with:
-          path: build/packages
-          key: ${{ runner.os }}-${{ hashFiles('manifest.toml') }}
-
-      - run: rad init
-
-      - uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: ${{ !steps.cache-node.outputs.cache-hit }}
+        run: rad init
 
       - run: rad format --check
 

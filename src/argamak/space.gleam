@@ -55,7 +55,7 @@ pub fn new() -> Space {
 ///
 /// ```gleam
 /// > import argamak/axis.{Infer}
-/// > assert Ok(space) = d1(Infer("A"))
+/// > let assert Ok(space) = d1(Infer("A"))
 /// > axes(space)
 /// [Infer("A")]
 /// ```
@@ -73,7 +73,7 @@ pub fn d1(a: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B}
-/// > assert Ok(space) = d2(A(2), B(2))
+/// > let assert Ok(space) = d2(A(2), B(2))
 /// > axes(space)
 /// [A(2), B(2)]
 /// ```
@@ -91,7 +91,7 @@ pub fn d2(a: Axis, b: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B, Infer}
-/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > let assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > axes(space)
 /// [A(2), B(2), Infer("C")]
 /// ```
@@ -109,7 +109,7 @@ pub fn d3(a: Axis, b: Axis, c: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B, D, Infer}
-/// > assert Ok(space) = d4(A(2), B(2), Infer("C"), D(1))
+/// > let assert Ok(space) = d4(A(2), B(2), Infer("C"), D(1))
 /// > axes(space)
 /// [A(2), B(2), Infer("C"), D(1)]
 /// ```
@@ -127,7 +127,7 @@ pub fn d4(a: Axis, b: Axis, c: Axis, d: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B, C, D, E}
-/// > assert Ok(space) = d5(A(5), B(4), C(3), D(2), E(1))
+/// > let assert Ok(space) = d5(A(5), B(4), C(3), D(2), E(1))
 /// > axes(space)
 /// [A(5), B(4), C(3), D(2), E(1)]
 /// ```
@@ -145,7 +145,7 @@ pub fn d5(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B, C, D, E, F}
-/// > assert Ok(space) = d6(A(9), B(9), C(9), D(9), E(9), F(9))
+/// > let assert Ok(space) = d6(A(9), B(9), C(9), D(9), E(9), F(9))
 /// > axes(space)
 /// [A(9), B(9), C(9), D(9), E(9), F(9)]
 /// ```
@@ -163,7 +163,7 @@ pub fn d6(a: Axis, b: Axis, c: Axis, d: Axis, e: Axis, f: Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{A, B, C, D, E, F, Z}
-/// > assert Ok(space) = from_list([A(9), B(9), C(9), D(9), E(9), F(9), Z(9)])
+/// > let assert Ok(space) = from_list([A(9), B(9), C(9), D(9), E(9), F(9), Z(9)])
 /// > axes(space)
 /// [A(9), B(9), C(9), D(9), E(9), F(9), Z(9)]
 /// ```
@@ -187,11 +187,11 @@ pub fn from_list(x: Axes) -> SpaceResult {
 /// []
 ///
 /// > import argamak/axis.{A, B, Infer}
-/// > assert Ok(space) = d1(Infer("A"))
+/// > let assert Ok(space) = d1(Infer("A"))
 /// > axes(space)
 /// [Infer("A")]
 ///
-/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > let assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > axes(space)
 /// [A(2), B(2), Infer("C")]
 /// ```
@@ -209,11 +209,11 @@ pub fn axes(x: Space) -> Axes {
 /// 0
 ///
 /// > import argamak/axis.{A, B, Infer}
-/// > assert Ok(space) = d1(Infer("A"))
+/// > let assert Ok(space) = d1(Infer("A"))
 /// > degree(space)
 /// 1
 ///
-/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > let assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > degree(space)
 /// 3
 /// ```
@@ -233,11 +233,11 @@ pub fn degree(x: Space) -> Int {
 /// []
 ///
 /// > import argamak/axis.{A, B, Infer}
-/// > assert Ok(space) = d1(Infer("A"))
+/// > let assert Ok(space) = d1(Infer("A"))
 /// > shape(space)
 /// [0]
 ///
-/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > let assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > shape(space)
 /// [2, 2, 0]
 /// ```
@@ -261,17 +261,17 @@ pub fn shape(x: Space) -> List(Int) {
 ///
 /// ```gleam
 /// > import argamak/axis.{B, C, Infer}
-/// > assert Ok(space) = map(new(), with: fn(_) { C(3) })
+/// > let assert Ok(space) = map(new(), with: fn(_) { C(3) })
 /// > axes(space)
 /// []
 ///
-/// > assert Ok(space) = d1(Infer("A"))
-/// > assert Ok(space) = map(space, with: fn(_) { C(3) })
+/// > let assert Ok(space) = d1(Infer("A"))
+/// > let assert Ok(space) = map(space, with: fn(_) { C(3) })
 /// > axes(space)
 /// [C(3)]
 ///
-/// > assert Ok(space) = d3(Infer("A"), B(2), C(2))
-/// > assert Ok(space) = map(space, with: fn(axis) {
+/// > let assert Ok(space) = d3(Infer("A"), B(2), C(2))
+/// > let assert Ok(space) = map(space, with: fn(axis) {
 /// >   case axis {
 /// >     Infer(_) -> axis.resize(axis, 4)
 /// >     _else -> axis
@@ -298,15 +298,15 @@ pub fn map(x: Space, with fun: fn(Axis) -> Axis) -> SpaceResult {
 ///
 /// ```gleam
 /// > import argamak/axis.{Axis, Infer, X, Y}
-/// > assert Ok(a) = d1(Infer("X"))
+/// > let assert Ok(a) = d1(Infer("X"))
 /// > merge(a, new()) |> result.map(with: axes)
 /// Ok([Infer("X")])
 ///
-/// > assert Ok(b) = d2(Axis("Sparkle", 2), X(2))
+/// > let assert Ok(b) = d2(Axis("Sparkle", 2), X(2))
 /// > merge(a, b) |> result.map(with: axes)
 /// Ok([Axis("Sparkle", 2), Infer("X")])
 ///
-/// > assert Ok(c) = d3(Infer("X"), Axis("Sparkle", 3), Y(3))
+/// > let assert Ok(c) = d3(Infer("X"), Axis("Sparkle", 3), Y(3))
 /// > merge(b, c)
 /// Error([SpaceError(CannotMerge, [Y(3), X(2)])])
 /// ```
@@ -359,7 +359,7 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
     })
     |> list.partition(with: result.is_ok)
 
-  try x = case errors {
+  use x <- result.try(case errors {
     [] ->
       x
       |> result.all
@@ -367,11 +367,11 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
     _else ->
       errors
       |> list.map(with: fn(x) {
-        assert Error(x) = x
+        let assert Error(x) = x
         x
       })
       |> Error
-  }
+  })
 
   x
   |> Space
@@ -391,11 +391,11 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
 /// "Space()"
 ///
 /// > import argamak/axis.{A, B, Axis, Infer}
-/// > assert Ok(space) = d1(Axis("Sparkle", 2))
+/// > let assert Ok(space) = d1(Axis("Sparkle", 2))
 /// > to_string(space)
 /// "Space(Axis(\"Sparkle\", 2))"
 ///
-/// > assert Ok(space) = d3(A(2), B(2), Infer("C"))
+/// > let assert Ok(space) = d3(A(2), B(2), Infer("C"))
 /// > to_string(space)
 /// "Space(A(2), B(2), Infer(\"C\"))"
 /// ```
@@ -453,13 +453,10 @@ pub fn to_string(x: Space) -> String {
 ///
 fn validate(space: Space) -> SpaceResult {
   let ValidateAcc(_, _, results: results) = {
-    use
-      acc,
-      axis
-    <- list.fold(
-        over: axes(space),
-        from: ValidateAcc(names: [], inferred: False, results: []),
-      )
+    use acc, axis <- list.fold(
+      over: axes(space),
+      from: ValidateAcc(names: [], inferred: False, results: []),
+    )
     let name = axis.name(axis)
     let size = axis.size(axis)
     let errors =

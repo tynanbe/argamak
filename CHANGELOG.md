@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Argamak now requires Gleam v0.30 or later.
+- The `tensor` module gains the `concat` slicing/joining function.
+
 ## v0.3.0 - 2022-11-20
 
 - The `tensor` module gains the `TensorResult` type; the `from_bool` and
@@ -29,14 +32,14 @@
   `merge` transformation functions.
 - The `space` module no longer includes the `elements` and `map_elements`
   functions.
-- The `space` module's `d0` function has been renamed to `new` and noi returns
+- The `space` module's `d0` function has been renamed to `new` and now returns
   an empty `Space` record directly.
 - The `space` module and its `Space` and `SpaceError` types have been reworked:
   The `Space` type signature no longer includes any generics, and the
   constructors `D0` through `D6` have been removed.
 - The `Format` type has been reworked and now includes the numeric format as a
-- Several numeric format types have been added to the `format` module.
   generic.
+- Several numeric format types have been added to the `format` module.
 - The `util` module has been removed.
 
 ## v0.2.0 - 2022-09-29

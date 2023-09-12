@@ -2,6 +2,7 @@ name = "argamak"
 version = "0.4.0-dev"
 description = "A tensor library for the Gleam programming language"
 licences = ["Apache-2.0"]
+gleam = "~> 0.30"
 
 [repository]
 repo = "argamak"
@@ -13,12 +14,12 @@ href = "https://gleam.run/"
 title = "Website"
 
 [dependencies]
-gleam_stdlib = "~> 0.25"
-nx = "~> 0.3"
+gleam_stdlib = "~> 0.30"
+nx = "~> 0.5"
 
 [dev-dependencies]
-gleeunit = "~> 0.7"
-rad = "~> 0.1"
+gleeunit = "~> 0.11"
+rad = "~> 0.4"
 
 [rad]
 targets = ["erlang", "javascript"]
@@ -38,10 +39,10 @@ run = [
 
 [[rad.formatters]]
 name = "javascript"
-check = ["rome", "ci", "--indent-style=space", "src", "test"]
-run = ["rome", "format", "--indent-style=space", "--write", "src", "test"]
+check = ["deno", "fmt", "--check"]
+run = ["deno", "fmt"]
 
 [[rad.tasks]]
 path = ["init"]
-run = ["npm", "install"]
+run = ["npm", "ci"]
 shortdoc = "Initialize argamak"

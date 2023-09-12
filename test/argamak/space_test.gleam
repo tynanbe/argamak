@@ -254,7 +254,7 @@ pub fn axes_test() {
 
   let a = A(size: 1)
 
-  assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.d1(a)
   d1
   |> space.axes
   |> should.equal([a])
@@ -269,7 +269,7 @@ pub fn axes_test() {
     Infer(name: "Shine"),
     Axis(name: "Sparkle", size: 9),
   ]
-  assert Ok(d8) = space.from_list(xs)
+  let assert Ok(d8) = space.from_list(xs)
   d8
   |> space.axes
   |> should.equal(xs)
@@ -282,7 +282,7 @@ pub fn degree_test() {
 
   let a = A(size: 1)
 
-  assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.d1(a)
   d1
   |> space.degree
   |> should.equal(1)
@@ -297,7 +297,7 @@ pub fn degree_test() {
     Infer(name: "Shine"),
     Axis(name: "Sparkle", size: 9),
   ]
-  assert Ok(d8) = space.from_list(xs)
+  let assert Ok(d8) = space.from_list(xs)
   d8
   |> space.degree
   |> should.equal(8)
@@ -310,7 +310,7 @@ pub fn shape_test() {
 
   let a = A(size: 1)
 
-  assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.d1(a)
   d1
   |> space.shape
   |> should.equal([1])
@@ -325,7 +325,7 @@ pub fn shape_test() {
     Infer(name: "Shine"),
     Axis(name: "Sparkle", size: 9),
   ]
-  assert Ok(d8) = space.from_list(xs)
+  let assert Ok(d8) = space.from_list(xs)
   d8
   |> space.shape
   |> should.equal([1, 3, 9, 27, 81, 243, 0, 9])
@@ -338,7 +338,7 @@ pub fn shape_test() {
 pub fn map_test() {
   let resize = axis.resize(_, 3)
 
-  assert Ok(d0) =
+  let assert Ok(d0) =
     space.new()
     |> space.map(with: resize)
   d0
@@ -346,8 +346,8 @@ pub fn map_test() {
   |> should.equal([])
 
   let a = A(size: 1)
-  assert Ok(d1) = space.d1(a)
-  assert Ok(d1) = space.map(d1, with: resize)
+  let assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.map(d1, with: resize)
   d1
   |> space.axes
   |> should.equal([A(size: 3)])
@@ -362,8 +362,8 @@ pub fn map_test() {
     Infer(name: "Shine"),
     Axis(name: "Sparkle", size: 9),
   ]
-  assert Ok(d8) = space.from_list(xs)
-  assert Ok(d8) = space.map(d8, with: resize)
+  let assert Ok(d8) = space.from_list(xs)
+  let assert Ok(d8) = space.map(d8, with: resize)
 
   d8
   |> space.axes
@@ -395,57 +395,57 @@ pub fn merge_test() {
 
   let d0 = space.new()
 
-  assert Ok(d1) = space.d1(a)
-  assert Ok(d1) = space.merge(d1, d0)
+  let assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.merge(d1, d0)
   d1
   |> space.axes
   |> should.equal([a])
 
-  assert Ok(d2) = space.d2(a, axis)
-  assert Ok(d2) = space.merge(d2, d0)
+  let assert Ok(d2) = space.d2(a, axis)
+  let assert Ok(d2) = space.merge(d2, d0)
   d2
   |> space.axes
   |> should.equal([a, axis])
 
-  assert Ok(d3) = space.d3(a, infer, axis)
-  assert Ok(d3) = space.merge(d3, d0)
+  let assert Ok(d3) = space.d3(a, infer, axis)
+  let assert Ok(d3) = space.merge(d3, d0)
   d3
   |> space.axes
   |> should.equal([a, infer, axis])
 
-  assert Ok(d1_axis) = space.d1(Axis(name: "A", size: 9))
-  assert Ok(d1) = space.merge(d1, d1_axis)
+  let assert Ok(d1_axis) = space.d1(Axis(name: "A", size: 9))
+  let assert Ok(d1) = space.merge(d1, d1_axis)
   d1
   |> space.axes
   |> should.equal([A(size: 9)])
 
-  assert Ok(d1) =
+  let assert Ok(d1) =
     axis
     |> axis.resize(1)
     |> space.d1
-  assert Ok(d3) = space.merge(d3, d1)
+  let assert Ok(d3) = space.merge(d3, d1)
   d3
   |> space.axes
   |> should.equal([a, infer, axis])
 
-  assert Ok(d1) =
+  let assert Ok(d1) =
     axis
     |> axis.name
     |> Infer
     |> space.d1
-  assert Ok(d3) = space.map(d3, with: axis.resize(_, 1))
-  assert Ok(d3) = space.merge(d1, d3)
+  let assert Ok(d3) = space.map(d3, with: axis.resize(_, 1))
+  let assert Ok(d3) = space.merge(d1, d3)
   d3
   |> space.axes
   |> should.equal([a, Axis(name: "Shine", size: 1), Infer(name: "Sparkle")])
 
-  assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.d1(a)
   space.merge(d1, d3)
   |> should.equal(Error([
     SpaceError(CannotMerge, [Infer(name: "Sparkle"), A(size: 1)]),
   ]))
 
-  assert Ok(d2) = space.d2(Infer(name: "Shine"), axis)
+  let assert Ok(d2) = space.d2(Infer(name: "Shine"), axis)
   space.merge(d3, d2)
   |> should.equal(Error([SpaceError(CannotInfer, [Infer(name: "Sparkle")])]))
 }
@@ -461,7 +461,7 @@ pub fn to_string_test() {
 
   let a = A(size: 1)
 
-  assert Ok(d1) = space.d1(a)
+  let assert Ok(d1) = space.d1(a)
   d1
   |> space.to_string
   |> should.equal("Space(A(1))")
@@ -476,7 +476,7 @@ pub fn to_string_test() {
     Infer(name: "Shine"),
     Axis(name: "Sparkle", size: 9),
   ]
-  assert Ok(d8) = space.from_list(xs)
+  let assert Ok(d8) = space.from_list(xs)
   d8
   |> space.to_string
   |> should.equal(

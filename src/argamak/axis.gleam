@@ -98,13 +98,33 @@ pub fn name(x: Axis) -> String {
 pub fn size(x: Axis) -> Int {
   case x {
     Infer(_) -> 0
-    Axis(size: size, ..) | A(size) | B(size) | C(size) | D(size) | E(size) | F(
-      size,
-    ) | G(size) | H(size) | I(size) | J(size) | K(size) | L(size) | M(size) | N(
-      size,
-    ) | O(size) | P(size) | Q(size) | R(size) | S(size) | T(size) | U(size) | V(
-      size,
-    ) | W(size) | X(size) | Y(size) | Z(size) -> size
+    Axis(size: size, ..)
+    | A(size)
+    | B(size)
+    | C(size)
+    | D(size)
+    | E(size)
+    | F(size)
+    | G(size)
+    | H(size)
+    | I(size)
+    | J(size)
+    | K(size)
+    | L(size)
+    | M(size)
+    | N(size)
+    | O(size)
+    | P(size)
+    | Q(size)
+    | R(size)
+    | S(size)
+    | T(size)
+    | U(size)
+    | V(size)
+    | W(size)
+    | X(size)
+    | Y(size)
+    | Z(size) -> size
   }
 }
 
