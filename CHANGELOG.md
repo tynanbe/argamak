@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.4.0 - 2023-09-11
 
 - Argamak now requires Gleam v0.30 or later.
 - The `tensor` module gains the `concat` slicing/joining function.
