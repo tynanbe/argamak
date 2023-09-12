@@ -50,9 +50,9 @@ end
 ### JavaScript
 
 The `@tensorflow/tfjs` package is a runtime requirement for `argamak`; however,
-its import path in the `argamak_ffi.mjs` module might need adjustment,
-depending on your use case. It can be used as is in your Node.js project after
-running `npm install @tensorflow/tfjs-node` or an equivalent command.
+its import path in the `argamak_ffi.mjs` module might need adjustment, depending
+on your use case. It can be used as is in your Node.js project after running
+`npm install @tensorflow/tfjs-node` or an equivalent command.
 
 ## Usage
 
