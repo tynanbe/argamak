@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The `tensor` module's `concat` function now returns an `AxisNotFound` error
+  when the given find function is `False` for every `Axis`.
+
 ## v0.4.0 - 2023-09-11
 
 - Argamak now requires Gleam v0.30 or later.

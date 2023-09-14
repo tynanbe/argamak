@@ -24,6 +24,7 @@ pub type Native
 /// When a tensor operation cannot succeed.
 ///
 pub type TensorError {
+  AxisNotFound
   CannotBroadcast
   IncompatibleAxes
   IncompatibleShape
@@ -3357,8 +3358,8 @@ pub fn in_situ_mean(
 /// The first `Axis` for which the given `find` function returns `True` is
 /// selected for joining.
 ///
-/// If the `find` function returns `False` for every `Axis`, the tensors will
-/// be joined along the first `Axis`.
+/// If the `find` function returns `False` for every `Axis`, an `AxisNotFound`
+/// error is returned.
 ///
 /// ## Examples
 ///
@@ -3390,6 +3391,9 @@ pub fn in_situ_mean(
 /// )
 /// Nil
 ///
+/// > concat([a, b], with: fn(_) { False })
+/// Error(AxisNotFound)
+///
 /// > concat([a, b], with: fn(a) { axis.name(a) == "X" })
 /// Error(IncompatibleShape)
 ///
@@ -3419,13 +3423,7 @@ pub fn concat(
     |> iterator.index
     |> iterator.find(one_that: fn(item) { find(item.1) })
     |> result.map(with: fn(x) { x.0 })
-    |> result.lazy_or(fn() {
-      case new_axes {
-        [_, ..] -> Ok(0)
-        _else -> Error(Nil)
-      }
-    })
-    |> result.replace_error(IncompatibleShape),
+    |> result.replace_error(AxisNotFound),
   )
   use new_axes <- result.try({
     use new_axes, x <- list.try_fold(over: rest, from: new_axes)

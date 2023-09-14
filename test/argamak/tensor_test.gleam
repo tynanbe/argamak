@@ -2003,7 +2003,7 @@ pub fn concat_test() {
   let assert Ok(x) =
     x
     |> list.repeat(times: 3)
-    |> tensor.concat(with: fn(_) { False })
+    |> tensor.concat(with: fn(_) { True })
   x
   |> should_share_native_format
   |> tensor.axes
@@ -2025,6 +2025,10 @@ pub fn concat_test() {
   x
   |> tensor.to_floats
   |> should.equal([0.0, 1.0, 4.0, 2.0, 3.0, 5.0])
+
+  [a, b]
+  |> tensor.concat(with: fn(_) { False })
+  |> should.equal(Error(tensor.AxisNotFound))
 
   let error = Error(tensor.IncompatibleShape)
 
