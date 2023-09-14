@@ -78,8 +78,10 @@ pub fn announce_winner(
   // The "Horse" Axis size will be inferred based on the data when a Tensor is
   // put into our Space (perhaps we won't always know how many horses will run).
   //
-  let assert Ok(d2) =
+  use d2 <- result.try(
     space.d2(Infer(name: "Horse"), Axis(name: "Trial", size: 2))
+    |> result.map_error(with: tensor.SpaceErrors),
+  )
 
   // Every Tensor has a numerical Format, a Space, and some data.
   // A 2d Tensor can be visualized like a table or matrix.
