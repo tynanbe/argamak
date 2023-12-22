@@ -1,13 +1,13 @@
-import argamak/axis.{A, B, C, D, E, F, Infer, Z}
-import argamak/format
-import argamak/space
-import argamak/tensor.{Tensor}
-import gleam/dynamic.{Dynamic}
+import gleam/dynamic.{type Dynamic}
 import gleam/float
 import gleam/int
 import gleam/list
 import gleam/order.{Eq}
 import gleeunit/should
+import argamak/axis.{A, B, C, D, E, F, Infer, Z}
+import argamak/format
+import argamak/space
+import argamak/tensor.{type Tensor}
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Creation Functions                     //
@@ -525,17 +525,13 @@ pub fn broadcast_over_test() {
   |> should.equal(list.flat_map(over: xs, with: list.repeat(item: _, times: 2)))
 
   let assert Ok(y) =
-    tensor.broadcast_over(
-      from: x,
-      into: d3,
-      with: fn(axis) {
-        case axis.name(axis) {
-          "A" -> "A"
-          "B" -> "C"
-          name -> name
-        }
-      },
-    )
+    tensor.broadcast_over(from: x, into: d3, with: fn(axis) {
+      case axis.name(axis) {
+        "A" -> "A"
+        "B" -> "C"
+        name -> name
+      }
+    })
   y
   |> tensor.space
   |> space.axes

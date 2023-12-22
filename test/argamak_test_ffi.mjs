@@ -1,6 +1,7 @@
 import { tensor as tf_tensor } from "@tensorflow/tfjs-node";
+import { inspect } from "../gleam_stdlib/gleam_stdlib.mjs";
 
-export const tensor = (x) => tf_tensor(eval(x.inspect()));
+export const tensor = (x) => tf_tensor(eval(inspect(x)));
 
 export const shape = (x) => x.shape;
 

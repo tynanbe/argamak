@@ -11,14 +11,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "25"
           rebar3-version: "3"
-          elixir-version: "1.14"
-          gleam-version: "0.30"
+          elixir-version: "1.16"
+          gleam-version: "0.33"
 
       - id: cache-gleam
         uses: actions/cache@v3
@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: "18"
+          node-version: "20"
 
       - id: cache-node
         uses: actions/cache@v3

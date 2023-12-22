@@ -52,20 +52,21 @@ end
 The `@tensorflow/tfjs` package is a runtime requirement for `argamak`; however,
 its import path in the `argamak_ffi.mjs` module might need adjustment, depending
 on your use case. It can be used as is in your Node.js project after running
-`npm install @tensorflow/tfjs-node` or an equivalent command.
+`npm install @tensorflow/tfjs-node` or an equivalent command for your package
+manager of choice.
 
 ## Usage
 
 ```gleam
 // derby.gleam
-import argamak/axis.{Axis, Infer}
-import argamak/space
-import argamak/tensor.{InvalidData, TensorError}
 import gleam/function
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
+import argamak/axis.{Axis, Infer}
+import argamak/space
+import argamak/tensor.{type TensorError, InvalidData}
 
 pub fn announce_winner(
   from horses: List(String),
@@ -148,7 +149,8 @@ pub fn announce_winner(
 
   // Finally, we make our announcement!
   //
-  announce(horse <> " wins the day with a mean time of " <> time <> " minutes!")
+  { horse <> " wins the day with a mean time of " <> time <> " minutes!" }
+  |> announce
   |> Ok
 }
 ```

@@ -1,4 +1,5 @@
 import * as tf from "@tensorflow/tfjs-node";
+import { inspect } from "../gleam_stdlib/gleam_stdlib.mjs";
 import { Error as GleamError, List, Ok, Result, toList } from "./gleam.mjs";
 import {
   CannotBroadcast,
@@ -135,7 +136,7 @@ const fn = (f) => new Fn(f);
 
 export const tensor = (x, format) =>
   fn(() => {
-    if (List.isList(x)) {
+    if (x instanceof List) {
       x = x.toArray();
       if (!x.length) {
         throw new Error(Nil);
@@ -330,7 +331,7 @@ export function columns() {
 // Format Functions                       //
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-export const format_to_native = (x) => x.inspect().toLowerCase();
+export const format_to_native = (x) => inspect(x).toLowerCase();
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Private Functions                      //

@@ -1,15 +1,15 @@
-import argamak/axis.{Axes, Axis, Infer}
-import argamak/format.{Float32, Format, Int32}
-import argamak/space.{Space}
 import gleam/bool
+import gleam/dict
 import gleam/io
 import gleam/int
 import gleam/iterator
 import gleam/list
-import gleam/map
 import gleam/result
 import gleam/string
-import gleam/string_builder.{StringBuilder}
+import gleam/string_builder.{type StringBuilder}
+import argamak/axis.{type Axes, type Axis, Axis, Infer}
+import argamak/format.{type Float32, type Format, type Int32}
+import argamak/space.{type Space}
 
 /// A `Tensor` is a generic container for n-dimensional data structures.
 ///
@@ -756,27 +756,29 @@ pub fn broadcast_over(
 ) -> TensorResult(a) {
   let new_axes = space.axes(new_space)
 
-  use mapped_axes <- result.try(result.all({
-    use axis <- list.map(axes(x))
-    let name = space_map(axis)
-    {
-      use axis <- list.find_map(new_axes)
-      case axis.name(axis) == name {
-        True ->
-          #(name, axis.size(axis))
-          |> Ok
-        False -> Error(Nil)
+  use mapped_axes <- result.try(
+    result.all({
+      use axis <- list.map(axes(x))
+      let name = space_map(axis)
+      {
+        use axis <- list.find_map(new_axes)
+        case axis.name(axis) == name {
+          True ->
+            #(name, axis.size(axis))
+            |> Ok
+          False -> Error(Nil)
+        }
       }
-    }
-    |> result.replace_error(IncompatibleAxes)
-  }))
-  let axis_map = map.from_list(mapped_axes)
+      |> result.replace_error(IncompatibleAxes)
+    }),
+  )
+  let axis_dict = dict.from_list(mapped_axes)
 
   // TODO: use higher level functions?
   let pre_shape = {
     use axis <- list.map(new_axes)
-    axis_map
-    |> map.get(axis.name(axis))
+    axis_dict
+    |> dict.get(axis.name(axis))
     |> result.unwrap(or: 1)
   }
 
@@ -3411,18 +3413,19 @@ pub fn concat(
   xs: List(Tensor(a)),
   with find: fn(Axis) -> Bool,
 ) -> TensorResult(a) {
-  use [x, ..rest] <- result.try(case xs {
+  use xs <- result.try(case xs {
     [_, ..] -> Ok(xs)
     _else -> Error(InvalidData)
   })
+  let assert [x, ..rest] = xs
   let new_axes = axes(x)
 
   use index <- result.try(
     new_axes
     |> iterator.from_list
     |> iterator.index
-    |> iterator.find(one_that: fn(item) { find(item.1) })
-    |> result.map(with: fn(x) { x.0 })
+    |> iterator.find(one_that: fn(item) { find(item.0) })
+    |> result.map(with: fn(x) { x.1 })
     |> result.replace_error(AxisNotFound),
   )
   use new_axes <- result.try({
@@ -3437,7 +3440,7 @@ pub fn concat(
       |> iterator.from_list
       |> iterator.index
     use new_axes, pair <- iterator.try_fold(over: pairs, from: [])
-    let #(i, #(a, b)) = pair
+    let #(#(a, b), i) = pair
     case axis.name(a) == axis.name(b) {
       True if i == index ->
         [axis.resize(a, axis.size(a) + axis.size(b)), ..new_axes]
@@ -3803,69 +3806,61 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
       |> string_builder.from_string
     })
 
-  let [#(_, xs)] =
+  let assert [#(xs, _)] =
     iterator.to_list({
       use acc, size, i <- list.index_fold(over: shape, from: xs)
       let should_build = fn(j) { { j + 1 } % size == 0 }
       let ToStringAcc(built: built, ..) = case i {
         0 -> {
           use acc, item <- iterator.fold(over: acc, from: to_string_acc)
-          let #(j, x) = item
+          let #(x, j) = item
           let builder =
             string_builder.append_builder(to: acc.builder, suffix: x)
           let should_build_j = should_build(j)
-          use <- bool_lazy_guard(
-            when: should_build_j && rank == 0,
+          use <- bool.lazy_guard(
+            when: should_build_j
+            && rank == 0,
             return: fn() {
               ToStringAcc(..acc, built: list.append(acc.built, [builder]))
             },
           )
-          use <- bool_lazy_guard(
-            when: should_build_j,
-            return: fn() {
-              let builder =
-                builder
-                |> string_builder.prepend(prefix: "[")
-                |> string_builder.append(suffix: "]")
-              ToStringAcc(
-                built: list.append(acc.built, [builder]),
-                builder: init_builder,
-              )
-            },
-          )
-          use <- bool_lazy_guard(
-            when: should_wrap(j),
-            return: fn() {
-              let indent = string.repeat(" ", times: tab + rank)
-              let builder =
-                builder
-                |> string_builder.append(suffix: ",\n")
-                |> string_builder.append(suffix: indent)
-              ToStringAcc(..acc, builder: builder)
-            },
-          )
+          use <- bool.lazy_guard(when: should_build_j, return: fn() {
+            let builder =
+              builder
+              |> string_builder.prepend(prefix: "[")
+              |> string_builder.append(suffix: "]")
+            ToStringAcc(
+              built: list.append(acc.built, [builder]),
+              builder: init_builder,
+            )
+          })
+          use <- bool.lazy_guard(when: should_wrap(j), return: fn() {
+            let indent = string.repeat(" ", times: tab + rank)
+            let builder =
+              builder
+              |> string_builder.append(suffix: ",\n")
+              |> string_builder.append(suffix: indent)
+            ToStringAcc(..acc, builder: builder)
+          })
           // else
           let builder = string_builder.append(to: builder, suffix: ", ")
           ToStringAcc(..acc, builder: builder)
         }
         _else -> {
           use acc, item <- iterator.fold(over: acc, from: to_string_acc)
-          let #(j, x) = item
+          let #(x, j) = item
           let builder =
             string_builder.append_builder(to: acc.builder, suffix: x)
-          use <- bool_lazy_guard(
-            when: should_build(j),
-            return: fn() {
-              let builder =
-                builder
-                |> string_builder.prepend(prefix: "[")
-                |> string_builder.append(suffix: "]")
-              ToStringAcc(
-                built: list.append(acc.built, [builder]),
-                builder: init_builder,
-              )
-            },
-          )
+          use <- bool.lazy_guard(when: should_build(j), return: fn() {
+            let builder =
+              builder
+              |> string_builder.prepend(prefix: "[")
+              |> string_builder.append(suffix: "]")
+            ToStringAcc(
+              built: list.append(acc.built, [builder]),
+              builder: init_builder,
+            )
+          })
           // else
           let indent = string.repeat(" ", times: tab + rank - i)
           let builder =
@@ -4224,16 +4219,5 @@ fn int_to_bool(x) {
   case x {
     0 -> False
     _else -> True
-  }
-}
-
-fn bool_lazy_guard(
-  when requirement: Bool,
-  return consequence: fn() -> a,
-  otherwise alternative: fn() -> a,
-) -> a {
-  case requirement {
-    True -> consequence()
-    False -> alternative()
   }
 }

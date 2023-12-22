@@ -1,9 +1,9 @@
+import gleam/list
+import gleeunit/should
 import argamak/axis.{A, Axis, B, C, D, E, Infer, Z}
 import argamak/space.{
   CannotInfer, CannotMerge, DuplicateName, InvalidSize, SpaceError,
 }
-import gleam/list
-import gleeunit/should
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // Creation Functions                     //
@@ -63,10 +63,9 @@ pub fn d2_test() {
 
   let axis_a = Axis(name: "A", size: 1)
   space.d2(a, axis_a)
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   space.d2(Infer(name: "A"), infer)
   |> should.equal(Error([SpaceError(CannotInfer, [infer])]))
@@ -94,10 +93,9 @@ pub fn d3_test() {
 
   let axis_a = Axis(name: "A", size: 1)
   space.d3(a, axis_a, axis)
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   space.d3(Infer(name: "A"), infer, axis)
   |> should.equal(Error([SpaceError(CannotInfer, [infer])]))
@@ -126,10 +124,9 @@ pub fn d4_test() {
 
   let axis_a = Axis(name: "A", size: 1)
   space.d4(a, b, axis_a, axis)
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   space.d4(Infer(name: "A"), infer, b, axis)
   |> should.equal(Error([SpaceError(CannotInfer, [infer])]))
@@ -159,10 +156,9 @@ pub fn d5_test() {
 
   let axis_a = Axis(name: "A", size: 1)
   space.d5(a, b, c, axis_a, axis)
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   space.d5(Infer(name: "A"), infer, b, c, axis)
   |> should.equal(Error([SpaceError(CannotInfer, [infer])]))
@@ -193,10 +189,9 @@ pub fn d6_test() {
 
   let axis_a = Axis(name: "A", size: 1)
   space.d6(a, b, c, d, axis_a, axis)
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   space.d6(Infer(name: "A"), infer, b, c, d, axis)
   |> should.equal(Error([SpaceError(CannotInfer, [infer])]))
@@ -233,10 +228,9 @@ pub fn from_list_test() {
   let axis_a = Axis(name: "A", size: 1)
   [a, b, c, d, e, axis_a, axis]
   |> space.from_list
-  |> should.equal(Error([
-    SpaceError(InvalidSize, [a]),
-    SpaceError(DuplicateName, [axis_a]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(InvalidSize, [a]), SpaceError(DuplicateName, [axis_a])]),
+  )
 
   [Infer(name: "A"), infer, b, c, d, e, axis]
   |> space.from_list
@@ -441,9 +435,9 @@ pub fn merge_test() {
 
   let assert Ok(d1) = space.d1(a)
   space.merge(d1, d3)
-  |> should.equal(Error([
-    SpaceError(CannotMerge, [Infer(name: "Sparkle"), A(size: 1)]),
-  ]))
+  |> should.equal(
+    Error([SpaceError(CannotMerge, [Infer(name: "Sparkle"), A(size: 1)])]),
+  )
 
   let assert Ok(d2) = space.d2(Infer(name: "Shine"), axis)
   space.merge(d3, d2)

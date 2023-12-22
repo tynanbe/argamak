@@ -1,5 +1,5 @@
-import argamak/format
 import gleeunit/should
+import argamak/format
 
 pub fn to_string_test() {
   format.float32()

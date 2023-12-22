@@ -1,9 +1,9 @@
-import argamak/axis.{Axes, Axis, Infer}
+import gleam/dict
 import gleam/int
 import gleam/list
-import gleam/map
 import gleam/result
 import gleam/string
+import argamak/axis.{type Axes, type Axis, Axis, Infer}
 
 /// An n-dimensional `Space` containing `Axes` of various sizes.
 ///
@@ -315,16 +315,16 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
   let index = fn(x: Space) {
     x
     |> axes
-    |> list.index_map(with: fn(index, axis) { #(index, axis) })
-    |> map.from_list
+    |> list.index_map(with: fn(axis, index) { #(index, axis) })
+    |> dict.from_list
   }
   let a_index = index(a)
   let b_index = index(b)
 
-  let a_size = map.size(a_index)
-  let b_size = map.size(b_index)
+  let a_size = dict.size(a_index)
+  let b_size = dict.size(b_index)
 
-  let #(x, map) = case a_size < b_size {
+  let #(x, dict) = case a_size < b_size {
     True -> #(axes(b), a_index)
     False -> #(axes(a), b_index)
   }
@@ -332,10 +332,10 @@ pub fn merge(a: Space, b: Space) -> SpaceResult {
 
   let #(x, errors) =
     x
-    |> list.index_map(with: fn(index, a_axis) {
+    |> list.index_map(with: fn(a_axis, index) {
       let b_axis =
-        map
-        |> map.get(index - offset)
+        dict
+        |> dict.get(index - offset)
         |> result.unwrap(or: a_axis)
       let a_name = axis.name(a_axis)
       let b_name = axis.name(b_axis)
@@ -478,7 +478,8 @@ fn validate(space: Space) -> SpaceResult {
     }
     ValidateAcc(
       names: [name, ..acc.names],
-      inferred: acc.inferred || axis == Infer(name),
+      inferred: acc.inferred
+      || axis == Infer(name),
       results: [result, ..acc.results],
     )
   }
