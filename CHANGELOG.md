@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 - 2023-12-22
 
 - Argamak now requires Gleam v0.33 or later.
 - The `tensor` module's `concat` function now returns an `AxisNotFound` error
