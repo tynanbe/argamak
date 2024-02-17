@@ -15,10 +15,10 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: "25"
+          otp-version: "26"
           rebar3-version: "3"
           elixir-version: "1.16"
-          gleam-version: "0.33"
+          gleam-version: "1.0.0-rc2"
 
       - id: cache-gleam
         uses: actions/cache@v3
@@ -56,6 +56,6 @@ jobs:
       - if: ${{ !steps.cache-node.outputs.cache-hit }}
         run: rad init
 
-      - run: rad format --check
-
       - run: rad test
+
+      - run: rad format --check

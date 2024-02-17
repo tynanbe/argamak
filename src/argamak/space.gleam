@@ -478,8 +478,7 @@ fn validate(space: Space) -> SpaceResult {
     }
     ValidateAcc(
       names: [name, ..acc.names],
-      inferred: acc.inferred
-      || axis == Infer(name),
+      inferred: acc.inferred || axis == Infer(name),
       results: [result, ..acc.results],
     )
   }

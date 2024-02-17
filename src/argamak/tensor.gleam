@@ -3818,8 +3818,7 @@ fn do_to_string(from x: Tensor(a), wrap_at column: Int, with tab: Int) -> String
             string_builder.append_builder(to: acc.builder, suffix: x)
           let should_build_j = should_build(j)
           use <- bool.lazy_guard(
-            when: should_build_j
-            && rank == 0,
+            when: should_build_j && rank == 0,
             return: fn() {
               ToStringAcc(..acc, built: list.append(acc.built, [builder]))
             },

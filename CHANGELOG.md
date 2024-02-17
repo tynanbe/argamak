@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Argamak now supports `gleam_stdlib` v1.0.
+- Argamak now requires Gleam v0.34 or later.
+
 ## 1.0.0 - 2023-12-22
 
 - Argamak now requires Gleam v0.33 or later.
