@@ -32,7 +32,7 @@ $ gleam add argamak
 ```elixir
 defp deps do
   [
-    {:argamak, "~> 1.0"},
+    {:argamak, "~> 1.1"},
   ]
 end
 ```
@@ -43,7 +43,7 @@ end
 
 ```erlang
 {deps, [
-  {argamak, "1.0.0"}
+  {argamak, "1.1.0"}
 ]}.
 ```
 
